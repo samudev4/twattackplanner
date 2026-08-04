@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    const SCRIPT_VERSION = "3.2";
+    const SCRIPT_VERSION = "3.3";
     const GITHUB_URL = "https://github.com/samudev4";
 
     if (document.getElementById('tw-planner-window')) {
@@ -70,7 +70,7 @@
     style.innerHTML = `
         #tw-planner-window {
             position: fixed;
-            width: 540px;
+            width: 560px;
             background: #e1c38a url('https://dses.innogamescdn.com/asset/8b8e01d/graphic/index/main_bg.jpg') repeat;
             border: 3px solid #603000;
             border-radius: 10px;
@@ -117,7 +117,7 @@
         .tw-row {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             margin-bottom: 8px;
         }
         .tw-input {
@@ -135,7 +135,8 @@
             outline: none;
         }
         .tw-input-coord { width: 55px; text-align: center; }
-        .tw-input-time { width: 45px; text-align: center; }
+        .tw-input-time { width: 40px; text-align: center; }
+        .tw-input-ms { width: 48px; text-align: center; }
         
         .tw-btn {
             background: linear-gradient(180deg, #6c9e3f 0%, #3d6919 100%);
@@ -258,7 +259,6 @@
     const currentWorld = (typeof game_data !== 'undefined' && game_data.world) ? game_data.world : "Desconocido";
     const speeds = getStoredWorldSpeeds();
 
-    // FIX 1: Fecha por defecto ajustada al día de HOY
     const today = new Date();
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -302,12 +302,14 @@
 
                 <div class="tw-row" style="margin-top: 10px;">
                     <span style="width:65px; font-weight:bold;">Llegada:</span>
-                    <input type="date" id="tw-target-date" class="tw-input" value="${defaultDateStr}" style="width: 140px;">
+                    <input type="date" id="tw-target-date" class="tw-input" value="${defaultDateStr}" style="width: 130px;">
                     <input type="text" inputmode="numeric" maxlength="2" id="tw-h" class="tw-input tw-input-time" placeholder="HH">
                     <span style="font-weight:bold;">:</span>
                     <input type="text" inputmode="numeric" maxlength="2" id="tw-m" class="tw-input tw-input-time" placeholder="MM">
                     <span style="font-weight:bold;">:</span>
                     <input type="text" inputmode="numeric" maxlength="2" id="tw-s" class="tw-input tw-input-time" placeholder="SS">
+                    <span style="font-weight:bold;">.</span>
+                    <input type="text" inputmode="numeric" maxlength="3" id="tw-ms" class="tw-input tw-input-ms" placeholder="MS">
                 </div>
 
                 <!-- SELECCIÓN DE TROPAS -->
@@ -349,7 +351,7 @@
 
     document.body.appendChild(container);
 
-    // Inputs para unidades (Tipo texto sin flechas)
+    // Inputs para unidades
     const unitContainer = document.getElementById('tw-unit-inputs');
     Object.keys(BASE_UNIT_SPEEDS).forEach(unitKey => {
         const div = document.createElement('div');
@@ -458,12 +460,13 @@
         return slowestKey;
     }
 
+    // Formato DD/MM/AAAA HH:MM:SS.mmm
     function formatDate(d) {
         const pad = n => String(n).padStart(2, '0');
-        return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        const padMs = n => String(n).padStart(3, '0');
+        return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${padMs(d.getMilliseconds())}`;
     }
 
-    // FIX 2: Redondeo exacto de milisegundos a segundos usando Math.round
     function formatDuration(ms) {
         if (ms <= 0) return "00:00:00";
         const sec = Math.round(ms / 1000);
@@ -570,6 +573,7 @@
         document.getElementById('tw-h').value = '';
         document.getElementById('tw-m').value = '';
         document.getElementById('tw-s').value = '';
+        document.getElementById('tw-ms').value = '';
         document.querySelectorAll('.tw-unit-count').forEach(i => i.value = '');
     });
 
@@ -595,13 +599,14 @@
         const h = parseInt(document.getElementById('tw-h').value) || 0;
         const m = parseInt(document.getElementById('tw-m').value) || 0;
         const s = parseInt(document.getElementById('tw-s').value) || 0;
+        const ms = parseInt(document.getElementById('tw-ms').value) || 0;
 
         if (!dateVal) {
             alert('Por favor, selecciona una fecha válida.');
             return;
         }
 
-        const targetDate = new Date(`${dateVal}T${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`);
+        const targetDate = new Date(`${dateVal}T${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms).padStart(3,'0')}`);
 
         const units = {};
         document.querySelectorAll('.tw-unit-count').forEach(input => {
@@ -625,7 +630,6 @@
         const baseMinPerTile = BASE_UNIT_SPEEDS[slowestUnit];
         const realMinPerTile = baseMinPerTile / (currentSpeeds.worldSpeed * currentSpeeds.unitSpeed);
         
-        // FIX 2: Redondeo exacto de los milisegundos totales del trayecto al segundo entero más cercano
         const totalDurationMs = Math.round(dist * realMinPerTile * 60) * 1000;
 
         const launchDate = new Date(targetDate.getTime() - totalDurationMs);
