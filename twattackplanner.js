@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    const SCRIPT_VERSION = "3.3";
+    const SCRIPT_VERSION = "3.4";
     const GITHUB_URL = "https://github.com/samudev4";
 
     if (document.getElementById('tw-planner-window')) {
@@ -460,7 +460,6 @@
         return slowestKey;
     }
 
-    // Formato DD/MM/AAAA HH:MM:SS.mmm
     function formatDate(d) {
         const pad = n => String(n).padStart(2, '0');
         const padMs = n => String(n).padStart(3, '0');
@@ -648,7 +647,7 @@
         renderAttacks();
     });
 
-    // EXPORTAR BBCODE
+    // EXPORTAR BBCODE COMPATIBLE CON GUERRAS TRIBALES
     document.getElementById('tw-export-bb-btn').addEventListener('click', () => {
         const attacks = getStoredAttacks();
         if (attacks.length === 0) {
@@ -656,17 +655,22 @@
             return;
         }
 
-        let bb = `[table][tr][th]Origen[/th][th]Destino[/th][th]Tropas[/th][th]Duración[/th][th]Hora Envío[/th][th]Hora Llegada[/th][/tr]`;
-        attacks.forEach(atk => {
+        let bb = `[b]🛡️ PLANIFICACIÓN DE ATAQUES[/b]\n`;
+        attacks.forEach((atk, index) => {
             let uStr = [];
             Object.keys(atk.units).forEach(u => {
                 if (atk.units[u] > 0) uStr.push(`[unit]${u}[/unit] ${atk.units[u]}`);
             });
-            bb += `\n[tr][td][coord]${atk.ox}|${atk.oy}[/coord][/td][td][coord]${atk.tx}|${atk.ty}[/coord][/td][td]${uStr.join(' ')}[/td][td]${atk.durationStr}[/td][td]${atk.launchDate}[/td][td]${atk.targetDate}[/td][/tr]`;
-        });
-        bb += `\n[/table]`;
 
-        document.getElementById('tw-bbcode-output').value = bb;
+            bb += `\n[b]#${index + 1} | Origen:[/b] [coord]${atk.ox}|${atk.oy}[/coord] ➔ [b]Destino:[/b] [coord]${atk.tx}|${atk.ty}[/coord]\n`;
+            bb += `[b]Tropas:[/b] ${uStr.join(' ') || 'Sin especificar'}\n`;
+            bb += `[b]Duración:[/b] ${atk.durationStr}\n`;
+            bb += `[b]🚀 Enviar:[/b] ${atk.launchDate}\n`;
+            bb += `[b]🎯 Llegada:[/b] ${atk.targetDate}\n`;
+            bb += `--------------------------------------------------\n`;
+        });
+
+        document.getElementById('tw-bbcode-output').value = bb.trim();
         document.getElementById('tw-bbcode-panel').style.display = 'block';
     });
 
