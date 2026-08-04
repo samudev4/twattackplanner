@@ -2,7 +2,7 @@
     'use strict';
 
     // Configuración del Script / Metadata
-    const SCRIPT_VERSION = "2.3";
+    const SCRIPT_VERSION = "2.5";
     const GITHUB_URL = "https://github.com/samudev4"; // Cambia esta URL por la de tu repositorio si prefieres
 
     // Evitar duplicar la interfaz si ya está abierta
@@ -218,7 +218,7 @@
         <div id="tw-planner-content" class="tw-planner-body">
             <!-- PANEL DE AJUSTES -->
             <div id="tw-settings-panel" class="tw-box" style="display:none; background:#ebd2a9;">
-                <div class="tw-title-sm">⚙️ Ajuste de Velocidades (min/casilla)</div>
+                <div class="tw-title-sm">⚙️ Ajuste de Velocidades (min/campo)</div>
                 <div id="tw-settings-list" style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; max-height:150px; overflow-y:auto; margin-bottom:8px;"></div>
                 <div style="display:flex; gap:6px;">
                     <button id="tw-save-settings-btn" class="tw-btn" style="flex:1;">Guardar Ajustes</button>
