@@ -70,13 +70,13 @@
     style.innerHTML = `
         #tw-planner-window {
             position: fixed;
-            width: 540px; /* Un poco más ancho para las letras grandes */
+            width: 540px;
             background: #e1c38a url('https://dses.innogamescdn.com/asset/8b8e01d/graphic/index/main_bg.jpg') repeat;
             border: 3px solid #603000;
             border-radius: 10px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.8);
             font-family: Verdana, Arial, sans-serif;
-            font-size: 13px; /* Letra general más grande */
+            font-size: 13px;
             color: #222;
             z-index: 999999;
             box-sizing: border-box;
@@ -86,7 +86,7 @@
             color: #f0e2be;
             padding: 10px 15px;
             font-weight: bold;
-            font-size: 15px; /* Cabecera más grande */
+            font-size: 15px;
             border-bottom: 2px solid #3b1a00;
             cursor: move;
             display: flex;
@@ -125,7 +125,7 @@
             border: 1px solid #7d5128;
             padding: 6px 8px;
             border-radius: 5px;
-            font-size: 13px; /* Letra de input más grande */
+            font-size: 13px;
             box-sizing: border-box;
             box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
             transition: border-color 0.2s;
@@ -134,14 +134,14 @@
             border-color: #3d6919;
             outline: none;
         }
-        .tw-input-coord { width: 55px; text-align: center; } /* Coordenadas más anchas */
-        .tw-input-time { width: 45px; text-align: center; } /* Horas más anchas */
+        .tw-input-coord { width: 55px; text-align: center; }
+        .tw-input-time { width: 45px; text-align: center; }
         
         .tw-btn {
             background: linear-gradient(180deg, #6c9e3f 0%, #3d6919 100%);
             color: #fff;
             border: 1px solid #28470f;
-            border-radius: 6px; /* Botones redondeados */
+            border-radius: 6px;
             padding: 6px 12px;
             font-weight: bold;
             cursor: pointer;
@@ -258,9 +258,12 @@
     const currentWorld = (typeof game_data !== 'undefined' && game_data.world) ? game_data.world : "Desconocido";
     const speeds = getStoredWorldSpeeds();
 
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const defaultDateStr = tomorrow.toISOString().split('T')[0];
+    // FIX 1: Fecha por defecto ajustada al día de HOY
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const defaultDateStr = `${yyyy}-${mm}-${dd}`;
 
     container.innerHTML = `
         <div id="tw-planner-header">
@@ -455,15 +458,15 @@
         return slowestKey;
     }
 
-    // Nuevo Formato DD/MM/AAAA HH:MM:SS
     function formatDate(d) {
         const pad = n => String(n).padStart(2, '0');
         return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
     }
 
+    // FIX 2: Redondeo exacto de milisegundos a segundos usando Math.round
     function formatDuration(ms) {
-        if (ms < 0) return "00:00:00";
-        const sec = Math.floor(ms / 1000);
+        if (ms <= 0) return "00:00:00";
+        const sec = Math.round(ms / 1000);
         const h = Math.floor(sec / 3600);
         const m = Math.floor((sec % 3600) / 60);
         const s = sec % 60;
@@ -495,8 +498,6 @@
         const now = Date.now();
 
         attacks.forEach((atk, index) => {
-            // Revertir el formato de fecha solo para crear el objeto Date en el timer
-            // atk.launchDate guardado es "DD/MM/YYYY HH:MM:SS". Lo transformamos para parsearlo.
             const [datePart, timePart] = atk.launchDate.split(' ');
             const [d, m, y] = datePart.split('/');
             const launchMs = new Date(`${y}-${m}-${d}T${timePart}`).getTime();
@@ -623,7 +624,9 @@
         const currentSpeeds = getStoredWorldSpeeds();
         const baseMinPerTile = BASE_UNIT_SPEEDS[slowestUnit];
         const realMinPerTile = baseMinPerTile / (currentSpeeds.worldSpeed * currentSpeeds.unitSpeed);
-        const totalDurationMs = dist * realMinPerTile * 60 * 1000;
+        
+        // FIX 2: Redondeo exacto de los milisegundos totales del trayecto al segundo entero más cercano
+        const totalDurationMs = Math.round(dist * realMinPerTile * 60) * 1000;
 
         const launchDate = new Date(targetDate.getTime() - totalDurationMs);
 
@@ -631,8 +634,8 @@
             ox, oy, tx, ty, units,
             dist: dist.toFixed(2),
             durationStr: formatDuration(totalDurationMs),
-            targetDate: formatDate(targetDate), // Ahora se guarda en DD/MM/AAAA
-            launchDate: formatDate(launchDate)  // Ahora se guarda en DD/MM/AAAA
+            targetDate: formatDate(targetDate),
+            launchDate: formatDate(launchDate)
         };
 
         const attacks = getStoredAttacks();
