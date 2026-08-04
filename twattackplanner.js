@@ -1,11 +1,9 @@
 (function() {
     'use strict';
 
-    // Configuración del Script / Metadata
-    const SCRIPT_VERSION = "2.6";
-    const GITHUB_URL = "https://github.com/samudev4"; // Cambia esta URL por la de tu repositorio si prefieres
+    const SCRIPT_VERSION = "3.0";
+    const GITHUB_URL = "https://github.com/samudev4";
 
-    // Evitar duplicar la interfaz si ya está abierta
     if (document.getElementById('tw-planner-window')) {
         const content = document.getElementById('tw-planner-content');
         if (content.style.display === 'none') {
@@ -14,30 +12,40 @@
         return;
     }
 
-    // 1. CONFIGURACIÓN Y VELOCIDADES POR DEFECTO (Minutos por casilla)
-    const DEFAULT_SPEEDS = {
-        "Lanza": 18,
-        "Espada": 22,
-        "Hacha": 18,
-        "Arquero": 18,
-        "Espía": 9,
-        "Caballería Ligera": 10,
-        "Arquero a Caballo": 10,
-        "Caballería Pesada": 11,
-        "Ariete": 30,
-        "Catapulta": 30,
-        "Paladín": 10,
-        "Noble": 35
+    // 1. CONFIGURACIÓN DE UNIDADES Y VELOCIDADES BASE (Minutos por casilla en velocidad 1)
+    const BASE_UNIT_SPEEDS = {
+        "spear": 18,
+        "sword": 22,
+        "axe": 18,
+        "archer": 18,
+        "spy": 9,
+        "light": 10,
+        "marcher": 10,
+        "heavy": 11,
+        "ram": 30,
+        "catapult": 30,
+        "knight": 10,
+        "snob": 35
     };
 
-    function getStoredSpeeds() {
-        const saved = localStorage.getItem('tw_planner_speeds');
-        return saved ? JSON.parse(saved) : { ...DEFAULT_SPEEDS };
-    }
+    const UNIT_NAMES = {
+        "spear": "Lanza",
+        "sword": "Espada",
+        "axe": "Hacha",
+        "archer": "Arquero",
+        "spy": "Espía",
+        "light": "C. Ligera",
+        "marcher": "Arquero C.",
+        "heavy": "C. Pesada",
+        "ram": "Ariete",
+        "catapult": "Catapulta",
+        "knight": "Paladín",
+        "snob": "Noble"
+    };
 
-    function saveSpeeds(speeds) {
-        localStorage.setItem('tw_planner_speeds', JSON.stringify(speeds));
-    }
+    // Lectura de datos del juego desde el objeto global game_data
+    const worldSpeed = (typeof game_data !== 'undefined' && game_data.worldConfig) ? parseFloat(game_data.worldConfig.speed) : 1;
+    const unitSpeedMultiplier = (typeof game_data !== 'undefined' && game_data.worldConfig) ? parseFloat(game_data.worldConfig.unit_speed) : 1;
 
     function getStoredAttacks() {
         const saved = localStorage.getItem('tw_planner_attacks');
@@ -50,19 +58,19 @@
 
     function getStoredPosition() {
         const saved = localStorage.getItem('tw_planner_pos');
-        return saved ? JSON.parse(saved) : { top: '60px', left: '60px' };
+        return saved ? JSON.parse(saved) : { top: '50px', left: '50px' };
     }
 
     function savePosition(top, left) {
         localStorage.setItem('tw_planner_pos', JSON.stringify({ top, left }));
     }
 
-    // 2. INYECCIÓN DE ESTILOS CSS
+    // 2. ESTILOS CSS
     const style = document.createElement('style');
     style.innerHTML = `
         #tw-planner-window {
             position: fixed;
-            width: 420px;
+            width: 480px;
             background: #e1c38a url('https://dses.innogamescdn.com/asset/8b8e01d/graphic/index/main_bg.jpg') repeat;
             border: 3px solid #603000;
             border-radius: 6px;
@@ -88,15 +96,13 @@
             border-top-left-radius: 3px;
             border-top-right-radius: 3px;
         }
-        .tw-planner-body {
-            padding: 12px;
-        }
+        .tw-planner-body { padding: 10px; }
         .tw-box {
-            background: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.65);
             border: 1px solid #7d5128;
             border-radius: 4px;
-            padding: 10px;
-            margin-bottom: 10px;
+            padding: 8px;
+            margin-bottom: 8px;
         }
         .tw-title-sm {
             font-weight: bold;
@@ -109,78 +115,78 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            margin-bottom: 6px;
+            margin-bottom: 5px;
         }
         .tw-input {
             background: #fff;
             border: 1px solid #7d5128;
-            padding: 4px;
+            padding: 3px 5px;
             border-radius: 3px;
             font-size: 11px;
             box-sizing: border-box;
         }
-        .tw-input-coord {
-            width: 45px;
-            text-align: center;
-        }
-        .tw-select {
-            background: #fff;
-            border: 1px solid #7d5128;
-            padding: 4px;
-            border-radius: 3px;
-            width: 100%;
-        }
+        .tw-input-coord { width: 42px; text-align: center; }
         .tw-btn {
             background: linear-gradient(180deg, #6c9e3f 0%, #3d6919 100%);
             color: #fff;
             border: 1px solid #28470f;
             border-radius: 3px;
-            padding: 6px 10px;
+            padding: 4px 8px;
             font-weight: bold;
             cursor: pointer;
-            font-size: 11px;
+            font-size: 10px;
             text-align: center;
             box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
         }
-        .tw-btn:hover {
-            background: linear-gradient(180deg, #7cb349 0%, #487c1e 100%);
+        .tw-btn:hover { background: linear-gradient(180deg, #7cb349 0%, #487c1e 100%); }
+        .tw-btn-danger { background: linear-gradient(180deg, #c0392b 0%, #7f8c8d 100%); background-color: #a93226; border-color: #641e16; }
+        .tw-btn-secondary { background: linear-gradient(180deg, #888 0%, #444 100%); border-color: #222; }
+        .tw-btn-action { background: linear-gradient(180deg, #2980b9 0%, #1a5276 100%); border-color: #1b4f72; }
+        
+        .tw-unit-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            margin-top: 5px;
         }
-        .tw-btn-danger {
-            background: linear-gradient(180deg, #c0392b 0%, #7f8c8d 100%);
-            background-color: #a93226;
-            border-color: #641e16;
+        .tw-unit-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255,255,255,0.5);
+            padding: 2px 4px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
         }
-        .tw-btn-secondary {
-            background: linear-gradient(180deg, #888 0%, #444 100%);
-            border-color: #222;
-        }
+        .tw-unit-item input { width: 100%; font-size: 10px; padding: 2px; }
+
         .tw-card {
             background: #f4e4c1;
             border: 1px solid #9c7444;
             border-left: 4px solid #8a4b10;
-            padding: 8px;
+            padding: 6px 8px;
             border-radius: 3px;
             margin-bottom: 6px;
             position: relative;
         }
         .tw-card-del {
             position: absolute;
-            top: 6px;
-            right: 6px;
+            top: 4px;
+            right: 4px;
             background: #c0392b;
             color: #fff;
             border: none;
             border-radius: 3px;
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             cursor: pointer;
             font-weight: bold;
-            line-height: 14px;
+            line-height: 12px;
             text-align: center;
         }
         .tw-footer {
-            margin-top: 10px;
-            padding-top: 6px;
+            margin-top: 6px;
+            padding-top: 4px;
             border-top: 1px solid #b89160;
             display: flex;
             justify-content: space-between;
@@ -188,42 +194,47 @@
             font-size: 10px;
             color: #572d00;
         }
-        .tw-footer a {
-            color: #8a4b10;
-            text-decoration: none;
+        .tw-footer a { color: #8a4b10; text-decoration: none; font-weight: bold; }
+        .tw-timer {
             font-weight: bold;
+            font-family: monospace;
+            font-size: 11px;
+            padding: 2px 4px;
+            background: #fff;
+            border: 1px solid #999;
+            border-radius: 3px;
+            display: inline-block;
         }
-        .tw-footer a:hover {
-            text-decoration: underline;
-        }
+        .tw-timer-warn { color: #c0392b; background: #fadbd8; }
+        .tw-timer-ok { color: #27ae60; }
     `;
     document.head.appendChild(style);
 
-    // 3. ESTRUCTURA DE LA INTERFAZ HTML
+    // 3. ESTRUCTURA INTERFAZ
     const initialPos = getStoredPosition();
     const container = document.createElement('div');
     container.id = 'tw-planner-window';
     container.style.top = initialPos.top;
     container.style.left = initialPos.left;
 
+    const currentWorld = (typeof game_data !== 'undefined' && game_data.world) ? game_data.world : "Desconocido";
+
+    // Obtener fecha de mañana por defecto para el input de fecha
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const defaultDateStr = tomorrow.toISOString().split('T')[0];
+
     container.innerHTML = `
         <div id="tw-planner-header">
-            <span>🛡️ Planificador de Ataques</span>
-            <div>
-                <button id="tw-btn-settings" title="Ajustes de Velocidad" style="background:none; border:none; color:#f0e2be; cursor:pointer; font-size:14px; margin-right:5px;">⚙️</button>
-                <button id="tw-btn-toggle" style="background:none; border:none; color:#f0e2be; cursor:pointer; font-weight:bold;">_</button>
-            </div>
+            <span>🛡️ Planificador Avanzado de Ataques</span>
+            <button id="tw-btn-toggle" style="background:none; border:none; color:#f0e2be; cursor:pointer; font-weight:bold;">_</button>
         </div>
 
         <div id="tw-planner-content" class="tw-planner-body">
-            <!-- PANEL DE AJUSTES -->
-            <div id="tw-settings-panel" class="tw-box" style="display:none; background:#ebd2a9;">
-                <div class="tw-title-sm">⚙️ Ajuste de Velocidades (min/campo)</div>
-                <div id="tw-settings-list" style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; max-height:150px; overflow-y:auto; margin-bottom:8px;"></div>
-                <div style="display:flex; gap:6px;">
-                    <button id="tw-save-settings-btn" class="tw-btn" style="flex:1;">Guardar Ajustes</button>
-                    <button id="tw-cancel-settings-btn" class="tw-btn tw-btn-secondary">Volver</button>
-                </div>
+            <!-- INFO DEL MUNDO -->
+            <div style="font-size: 10px; color: #572d00; margin-bottom: 6px; display:flex; justify-content:space-between;">
+                <span><strong>Mundo:</strong> ${currentWorld}</span>
+                <span><strong>Vel. Mundo:</strong> ${worldSpeed} | <strong>Vel. Unidades:</strong> ${unitSpeedMultiplier}</span>
             </div>
 
             <!-- FORMULARIO DE ATAQUE -->
@@ -231,30 +242,31 @@
                 <div class="tw-title-sm">Nuevo Plan de Ataque</div>
 
                 <div class="tw-row">
-                    <span style="width:70px; font-weight:bold;">Origen:</span>
+                    <span style="width:55px; font-weight:bold;">Origen:</span>
                     <input type="number" id="tw-ox" class="tw-input tw-input-coord" placeholder="X">
                     <span>|</span>
                     <input type="number" id="tw-oy" class="tw-input tw-input-coord" placeholder="Y">
+                    <button id="tw-btn-current-village" class="tw-btn tw-btn-secondary" style="font-size:9px;">📍 Usar actual</button>
                 </div>
 
                 <div class="tw-row">
-                    <span style="width:70px; font-weight:bold;">Destino:</span>
+                    <span style="width:55px; font-weight:bold;">Destino:</span>
                     <input type="number" id="tw-tx" class="tw-input tw-input-coord" placeholder="X">
                     <span>|</span>
                     <input type="number" id="tw-ty" class="tw-input tw-input-coord" placeholder="Y">
                 </div>
 
                 <div class="tw-row">
-                    <span style="width:70px; font-weight:bold;">Tropa más lenta:</span>
-                    <select id="tw-unit" class="tw-select"></select>
+                    <span style="width:55px; font-weight:bold;">Llegada:</span>
+                    <input type="date" id="tw-target-date" class="tw-input" value="${defaultDateStr}">
+                    <input type="number" id="tw-h" class="tw-input" placeholder="HH" min="0" max="23" style="width:38px;">:
+                    <input type="number" id="tw-m" class="tw-input" placeholder="MM" min="0" max="59" style="width:38px;">:
+                    <input type="number" id="tw-s" class="tw-input" placeholder="SS" min="0" max="59" style="width:38px;">
                 </div>
 
-                <div class="tw-row" style="flex-wrap:wrap;">
-                    <span style="width:100%; font-weight:bold; margin-bottom:2px;">Hora de Llegada:</span>
-                    <input type="number" id="tw-h" class="tw-input" placeholder="HH" min="0" max="23" style="width:50px;"> :
-                    <input type="number" id="tw-m" class="tw-input" placeholder="MM" min="0" max="59" style="width:50px;"> :
-                    <input type="number" id="tw-s" class="tw-input" placeholder="SS" min="0" max="59" style="width:50px;">
-                </div>
+                <!-- SELECCIÓN DE TROPAS -->
+                <div style="font-weight:bold; margin-top:6px; margin-bottom:2px;">Tropas a enviar:</div>
+                <div class="tw-unit-grid" id="tw-unit-inputs"></div>
 
                 <div style="display:flex; gap:6px; margin-top:8px;">
                     <button id="tw-add-btn" class="tw-btn" style="flex:1;">+ Añadir Ataque</button>
@@ -266,14 +278,24 @@
             <div class="tw-box" style="margin-bottom:0;">
                 <div class="tw-title-sm" style="display:flex; justify-content:space-between; align-items:center;">
                     <span>📜 Plan de Ataques</span>
-                    <button id="tw-clear-all-btn" style="background:none; border:none; color:#a93226; cursor:pointer; font-size:10px; text-decoration:underline;">Borrar todos</button>
+                    <div>
+                        <button id="tw-export-bb-btn" class="tw-btn tw-btn-action" style="font-size:9px;">📋 Exportar BBCode</button>
+                        <button id="tw-clear-all-btn" style="background:none; border:none; color:#a93226; cursor:pointer; font-size:10px; text-decoration:underline; margin-left:4px;">Borrar</button>
+                    </div>
                 </div>
-                <div id="tw-attack-list" style="max-height: 200px; overflow-y: auto;"></div>
+                <div id="tw-attack-list" style="max-height: 180px; overflow-y: auto;"></div>
             </div>
 
-            <!-- PIE DE PÁGINA / CREDITS -->
+            <!-- MODAL BBCODE -->
+            <div id="tw-bbcode-panel" class="tw-box" style="display:none; background:#ebd2a9;">
+                <div class="tw-title-sm">📋 BBCode Generado</div>
+                <textarea id="tw-bbcode-output" style="width:100%; height:100px; font-size:10px; font-family:monospace; box-sizing:border-box;"></textarea>
+                <button id="tw-close-bbcode-btn" class="tw-btn tw-btn-secondary" style="margin-top:4px; width:100%;">Cerrar</button>
+            </div>
+
+            <!-- PIE DE PÁGINA -->
             <div class="tw-footer">
-                <span>Hecho por <strong>REDWALDA</strong></span>
+                <span>hecho por <strong>samudev4</strong></span>
                 <span>v${SCRIPT_VERSION} | <a href="${GITHUB_URL}" target="_blank" rel="noopener noreferrer">GitHub</a></span>
             </div>
         </div>
@@ -281,7 +303,19 @@
 
     document.body.appendChild(container);
 
-    // 4. LÓGICA DE ARRASTRE
+    // Generar inputs para cada unidad
+    const unitContainer = document.getElementById('tw-unit-inputs');
+    Object.keys(BASE_UNIT_SPEEDS).forEach(unitKey => {
+        const div = document.createElement('div');
+        div.className = 'tw-unit-item';
+        div.innerHTML = `
+            <img src="https://dses.innogamescdn.com/asset/8b8e01d/graphic/unit/unit_${unitKey}.png" title="${UNIT_NAMES[unitKey]}" style="width:14px; height:14px;">
+            <input type="number" min="0" class="tw-input tw-unit-count" data-unit="${unitKey}" placeholder="0">
+        `;
+        unitContainer.appendChild(div);
+    });
+
+    // 4. LÓGICA ARRASTRE Y MINIMIZAR
     const header = document.getElementById('tw-planner-header');
     let isDragging = false, offsetX = 0, offsetY = 0;
 
@@ -301,11 +335,8 @@
         savePosition(newTop, newLeft);
     });
 
-    document.addEventListener('mouseup', () => {
-        isDragging = false;
-    });
+    document.addEventListener('mouseup', () => { isDragging = false; });
 
-    // Toggle Minimizar
     const toggleBtn = document.getElementById('tw-btn-toggle');
     const content = document.getElementById('tw-planner-content');
     toggleBtn.addEventListener('click', () => {
@@ -318,75 +349,92 @@
         }
     });
 
-    // 5. FUNCIONES DE FORMATO Y CÁLCULOS
-    function populateUnitSelect() {
-        const select = document.getElementById('tw-unit');
-        select.innerHTML = '';
-        const speeds = getStoredSpeeds();
-        Object.keys(speeds).forEach(unit => {
-            const opt = document.createElement('option');
-            opt.value = unit;
-            opt.textContent = `${unit} (${speeds[unit]} min/campo)`;
-            select.appendChild(opt);
+    // 5. CÁLCULOS Y FUNCIONES
+    function getSlowestUnitKey(unitsObj) {
+        let slowestKey = null;
+        let maxTime = -1;
+        Object.keys(unitsObj).forEach(u => {
+            if (unitsObj[u] > 0) {
+                const baseTime = BASE_UNIT_SPEEDS[u];
+                if (baseTime > maxTime) {
+                    maxTime = baseTime;
+                    slowestKey = u;
+                }
+            }
         });
+        return slowestKey;
     }
 
-    function renderSettingsList() {
-        const listContainer = document.getElementById('tw-settings-list');
-        listContainer.innerHTML = '';
-        const speeds = getStoredSpeeds();
+    function formatDate(d) {
+        const pad = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
 
-        Object.keys(speeds).forEach(unit => {
-            const item = document.createElement('div');
-            item.style = 'display:flex; flex-direction:column; gap:2px;';
-            item.innerHTML = `
-                <span style="font-size:10px;">${unit}:</span>
-                <input type="number" step="0.1" class="tw-input tw-setting-val" data-unit="${unit}" value="${speeds[unit]}">
-            `;
-            listContainer.appendChild(item);
+    function formatDuration(ms) {
+        if (ms < 0) return "00:00:00";
+        const sec = Math.floor(ms / 1000);
+        const h = Math.floor(sec / 3600);
+        const m = Math.floor((sec % 3600) / 60);
+        const s = sec % 60;
+        const pad = n => String(n).padStart(2, '0');
+        return `${pad(h)}:${pad(m)}:${pad(s)}`;
+    }
+
+    function buildRallyUrl(atk) {
+        const villageId = (typeof game_data !== 'undefined' && game_data.village) ? game_data.village.id : '';
+        let url = `/game.php?village=${villageId}&screen=place&x=${atk.tx}&y=${atk.ty}`;
+        Object.keys(atk.units).forEach(u => {
+            if (atk.units[u] > 0) {
+                url += `&${u}=${atk.units[u]}`;
+            }
         });
+        return url;
     }
 
-    function formatTime(date) {
-        const hh = String(date.getHours()).padStart(2, '0');
-        const mm = String(date.getMinutes()).padStart(2, '0');
-        const ss = String(date.getSeconds()).padStart(2, '0');
-        return `${hh}:${mm}:${ss}`;
-    }
-
-    function formatDuration(totalMs) {
-        const totalSeconds = Math.round(totalMs / 1000);
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-
-        const hh = String(hours).padStart(2, '0');
-        const mm = String(minutes).padStart(2, '0');
-        const ss = String(seconds).padStart(2, '0');
-
-        return `${hh}:${mm}:${ss}`;
-    }
-
+    // Renderizar ataques y cuentas atrás
     function renderAttacks() {
         const list = document.getElementById('tw-attack-list');
         list.innerHTML = '';
         const attacks = getStoredAttacks();
 
         if (attacks.length === 0) {
-            list.innerHTML = '<div style="color:#777; text-align:center; padding:10px;">No hay ataques planificados</div>';
+            list.innerHTML = '<div style="color:#777; text-align:center; padding:8px;">No hay ataques planificados</div>';
             return;
         }
 
+        const now = Date.now();
+
         attacks.forEach((atk, index) => {
+            const launchMs = new Date(atk.launchDate).getTime();
+            const diffMs = launchMs - now;
+
             const card = document.createElement('div');
             card.className = 'tw-card';
+
+            let unitsSummary = [];
+            Object.keys(atk.units).forEach(u => {
+                if (atk.units[u] > 0) unitsSummary.push(`${UNIT_NAMES[u]}: ${atk.units[u]}`);
+            });
+
+            const rallyUrl = buildRallyUrl(atk);
+            const isWarn = diffMs < 60000 && diffMs > 0; // Menos de 1 minuto
+
             card.innerHTML = `
                 <button class="tw-card-del" data-index="${index}">×</button>
                 <div style="font-weight:bold; color:#603000;">${atk.ox}|${atk.oy} ➔ ${atk.tx}|${atk.ty}</div>
-                <div>Tropa: <strong>${atk.unit}</strong> | Dist: ${atk.dist} casillas</div>
-                <div style="color:#d35400; font-weight:bold; margin-top:2px;">⏳ Duración: ${atk.durationStr}</div>
-                <div style="color:#27ae60; font-weight:bold; margin-top:2px;">🚀 Enviar: ${atk.launchStr}</div>
-                <div style="color:#2980b9; font-weight:bold;">🎯 Llegada: ${atk.targetStr}</div>
+                <div style="font-size:10px; color:#444; margin: 2px 0;">Tropas: ${unitsSummary.join(', ') || 'Sin especificar'}</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                    <div>
+                        <div>🚀 Enviar: <strong>${atk.launchDate}</strong></div>
+                        <div>🎯 Llegada: <strong>${atk.targetDate}</strong></div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div class="tw-timer ${isWarn ? 'tw-timer-warn' : 'tw-timer-ok'}">${formatDuration(diffMs)}</div>
+                        <div style="margin-top:3px;">
+                            <a href="${rallyUrl}" target="_blank" class="tw-btn tw-btn-action" style="text-decoration:none; padding:2px 6px;">⚔️ Enviar</a>
+                        </div>
+                    </div>
+                </div>
             `;
 
             card.querySelector('.tw-card-del').addEventListener('click', () => {
@@ -399,7 +447,24 @@
         });
     }
 
+    // Bucle para actualizar temporizadores cada segundo
+    setInterval(() => {
+        const attacks = getStoredAttacks();
+        if (attacks.length > 0) {
+            renderAttacks();
+        }
+    }, 1000);
+
     // 6. EVENTOS DE BOTONES
+    document.getElementById('tw-btn-current-village').addEventListener('click', () => {
+        if (typeof game_data !== 'undefined' && game_data.village) {
+            document.getElementById('tw-ox').value = game_data.village.x;
+            document.getElementById('tw-oy').value = game_data.village.y;
+        } else {
+            alert('No se pudieron leer las coordenadas del pueblo actual.');
+        }
+    });
+
     document.getElementById('tw-clear-form-btn').addEventListener('click', () => {
         document.getElementById('tw-ox').value = '';
         document.getElementById('tw-oy').value = '';
@@ -408,6 +473,7 @@
         document.getElementById('tw-h').value = '';
         document.getElementById('tw-m').value = '';
         document.getElementById('tw-s').value = '';
+        document.querySelectorAll('.tw-unit-count').forEach(i => i.value = '');
     });
 
     document.getElementById('tw-clear-all-btn').addEventListener('click', () => {
@@ -422,78 +488,89 @@
         const oy = parseFloat(document.getElementById('tw-oy').value);
         const tx = parseFloat(document.getElementById('tw-tx').value);
         const ty = parseFloat(document.getElementById('tw-ty').value);
-        const unit = document.getElementById('tw-unit').value;
 
         if (isNaN(ox) || isNaN(oy) || isNaN(tx) || isNaN(ty)) {
-            alert('Asegúrate de ingresar coordenadas X e Y válidas para origen y destino.');
+            alert('Por favor, ingresa coordenadas válidas de Origen y Destino.');
             return;
         }
 
+        const dateVal = document.getElementById('tw-target-date').value;
         const h = parseInt(document.getElementById('tw-h').value) || 0;
         const m = parseInt(document.getElementById('tw-m').value) || 0;
         const s = parseInt(document.getElementById('tw-s').value) || 0;
 
-        const targetDate = new Date();
-        targetDate.setHours(h, m, s, 0);
-        if (targetDate.getTime() < Date.now()) {
-            targetDate.setDate(targetDate.getDate() + 1);
+        if (!dateVal) {
+            alert('Por favor, selecciona una fecha válida.');
+            return;
         }
 
+        const targetDate = new Date(`${dateVal}T${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`);
+
+        // Recopilar tropas
+        const units = {};
+        document.querySelectorAll('.tw-unit-count').forEach(input => {
+            const count = parseInt(input.value) || 0;
+            if (count > 0) {
+                units[input.getAttribute('data-unit')] = count;
+            }
+        });
+
+        const slowestUnit = getSlowestUnitKey(units);
+        if (!slowestUnit) {
+            alert('Debes indicar la cantidad de al menos una tropa para el ataque.');
+            return;
+        }
+
+        // Cálculo de tiempo de viaje ajustado a velocidad de mundo y tropas
         const dx = ox - tx;
         const dy = oy - ty;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        const speeds = getStoredSpeeds();
-        const speedMinPerTile = speeds[unit] || 10;
-        const totalDurationMs = dist * speedMinPerTile * 60 * 1000;
+        const baseMinPerTile = BASE_UNIT_SPEEDS[slowestUnit];
+        const realMinPerTile = baseMinPerTile / (worldSpeed * unitSpeedMultiplier);
+        const totalDurationMs = dist * realMinPerTile * 60 * 1000;
 
         const launchDate = new Date(targetDate.getTime() - totalDurationMs);
 
         const newAttack = {
-            ox, oy, tx, ty, unit,
+            ox, oy, tx, ty, units,
             dist: dist.toFixed(2),
-            durationStr: formatDuration(totalDurationMs),
-            launchStr: formatTime(launchDate),
-            targetStr: formatTime(targetDate)
+            targetDate: formatDate(targetDate),
+            launchDate: formatDate(launchDate)
         };
 
-        const currentAttacks = getStoredAttacks();
-        currentAttacks.push(newAttack);
-        saveAttacks(currentAttacks);
+        const attacks = getStoredAttacks();
+        attacks.push(newAttack);
+        saveAttacks(attacks);
         renderAttacks();
     });
 
-    const settingsPanel = document.getElementById('tw-settings-panel');
-    const formPanel = document.getElementById('tw-form-panel');
+    // EXPORTAR BBCODE
+    document.getElementById('tw-export-bb-btn').addEventListener('click', () => {
+        const attacks = getStoredAttacks();
+        if (attacks.length === 0) {
+            alert('No hay ataques para exportar.');
+            return;
+        }
 
-    document.getElementById('tw-btn-settings').addEventListener('click', () => {
-        renderSettingsList();
-        formPanel.style.display = 'none';
-        settingsPanel.style.display = 'block';
-    });
-
-    document.getElementById('tw-cancel-settings-btn').addEventListener('click', () => {
-        settingsPanel.style.display = 'none';
-        formPanel.style.display = 'block';
-    });
-
-    document.getElementById('tw-save-settings-btn').addEventListener('click', () => {
-        const newSpeeds = {};
-        document.querySelectorAll('.tw-setting-val').forEach(input => {
-            const unit = input.getAttribute('data-unit');
-            const val = parseFloat(input.value);
-            if (!isNaN(val) && val > 0) {
-                newSpeeds[unit] = val;
-            }
+        let bb = `[table][tr][th]Origen[/th][th]Destino[/th][th]Tropas[/th][th]Hora Envio[/th][th]Hora Llegada[/th][/tr]`;
+        attacks.forEach(atk => {
+            let uStr = [];
+            Object.keys(atk.units).forEach(u => {
+                if (atk.units[u] > 0) uStr.push(`[unit]${u}[/unit] ${atk.units[u]}`);
+            });
+            bb += `\n[tr][td][coord]${atk.ox}|${atk.oy}[/coord][/td][td][coord]${atk.tx}|${atk.ty}[/coord][/td][td]${uStr.join(' ')}[/td][td]${atk.launchDate}[/td][td]${atk.targetDate}[/td][/tr]`;
         });
+        bb += `\n[/table]`;
 
-        saveSpeeds(newSpeeds);
-        populateUnitSelect();
-        settingsPanel.style.display = 'none';
-        formPanel.style.display = 'block';
+        document.getElementById('tw-bbcode-output').value = bb;
+        document.getElementById('tw-bbcode-panel').style.display = 'block';
     });
 
-    // Inicializar estado
-    populateUnitSelect();
+    document.getElementById('tw-close-bbcode-btn').addEventListener('click', () => {
+        document.getElementById('tw-bbcode-panel').style.display = 'none';
+    });
+
+    // Inicializar
     renderAttacks();
 })();
