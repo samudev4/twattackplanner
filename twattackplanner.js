@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    const SCRIPT_VERSION = "3.5";
+    const SCRIPT_VERSION = "3.6";
     const GITHUB_URL = "https://github.com/samudev4";
 
     if (document.getElementById('tw-planner-window')) {
@@ -341,7 +341,10 @@
             <div id="tw-bbcode-panel" class="tw-box" style="display:none; background:#ebd2a9;">
                 <div class="tw-title-sm">📋 BBCode Generado</div>
                 <textarea id="tw-bbcode-output" style="width:100%; height:120px; font-size:12px; font-family:monospace; box-sizing:border-box; border-radius:5px; padding:8px; border:1px solid #8a4b10;"></textarea>
-                <button id="tw-close-bbcode-btn" class="tw-btn tw-btn-secondary" style="margin-top:8px; width:100%;">Cerrar</button>
+                <div style="display:flex; gap:8px; margin-top:8px;">
+                    <button id="tw-copy-bbcode-btn" class="tw-btn tw-btn-action" style="flex:1;">📋 Copiar BBCode</button>
+                    <button id="tw-close-bbcode-btn" class="tw-btn tw-btn-secondary" style="flex:1;">Cerrar</button>
+                </div>
             </div>
 
             <!-- PIE DE PÁGINA -->
@@ -684,6 +687,32 @@
 
         document.getElementById('tw-bbcode-output').value = bb.trim();
         document.getElementById('tw-bbcode-panel').style.display = 'block';
+    });
+
+    // LÓGICA DE COPIAR BBCODE
+    document.getElementById('tw-copy-bbcode-btn').addEventListener('click', () => {
+        const textarea = document.getElementById('tw-bbcode-output');
+        textarea.select();
+
+        const copyBtn = document.getElementById('tw-copy-bbcode-btn');
+        const originalText = copyBtn.textContent;
+
+        const setSuccess = () => {
+            copyBtn.textContent = '✅ ¡Copiado!';
+            setTimeout(() => { copyBtn.textContent = originalText; }, 2000);
+        };
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(textarea.value)
+                .then(setSuccess)
+                .catch(() => {
+                    document.execCommand('copy');
+                    setSuccess();
+                });
+        } else {
+            document.execCommand('copy');
+            setSuccess();
+        }
     });
 
     document.getElementById('tw-close-bbcode-btn').addEventListener('click', () => {
