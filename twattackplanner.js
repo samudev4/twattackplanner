@@ -2,7 +2,7 @@
     'use strict';
 
     // Configuración del Script / Metadata
-    const SCRIPT_VERSION = "2.5";
+    const SCRIPT_VERSION = "2.6";
     const GITHUB_URL = "https://github.com/samudev4"; // Cambia esta URL por la de tu repositorio si prefieres
 
     // Evitar duplicar la interfaz si ya está abierta
@@ -326,7 +326,7 @@
         Object.keys(speeds).forEach(unit => {
             const opt = document.createElement('option');
             opt.value = unit;
-            opt.textContent = `${unit} (${speeds[unit]} min/casilla)`;
+            opt.textContent = `${unit} (${speeds[unit]} min/campo)`;
             select.appendChild(opt);
         });
     }
