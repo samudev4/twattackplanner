@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    const SCRIPT_VERSION = "3.0";
+    const SCRIPT_VERSION = "3.1";
     const GITHUB_URL = "https://github.com/samudev4";
 
     if (document.getElementById('tw-planner-window')) {
@@ -43,9 +43,29 @@
         "snob": "Noble"
     };
 
-    // Lectura de datos del juego desde el objeto global game_data
-    const worldSpeed = (typeof game_data !== 'undefined' && game_data.worldConfig) ? parseFloat(game_data.worldConfig.speed) : 1;
-    const unitSpeedMultiplier = (typeof game_data !== 'undefined' && game_data.worldConfig) ? parseFloat(game_data.worldConfig.unit_speed) : 1;
+    // LECTURA/ALMACENAMIENTO DE VELOCIDADES
+    function getStoredWorldSpeeds() {
+        const saved = localStorage.getItem('tw_planner_world_speeds');
+        if (saved) return JSON.parse(saved);
+
+        // Intentar leer de game_data si existe
+        let ws = 1;
+        let us = 1;
+        if (typeof game_data !== 'undefined') {
+            if (game_data.WorldConfig) {
+                ws = parseFloat(game_data.WorldConfig.speed) || 1;
+                us = parseFloat(game_data.WorldConfig.unit_speed) || 1;
+            } else if (game_data.worldConfig) {
+                ws = parseFloat(game_data.worldConfig.speed) || 1;
+                us = parseFloat(game_data.worldConfig.unit_speed) || 1;
+            }
+        }
+        return { worldSpeed: ws, unitSpeed: us };
+    }
+
+    function saveWorldSpeeds(ws, us) {
+        localStorage.setItem('tw_planner_world_speeds', JSON.stringify({ worldSpeed: ws, unitSpeed: us }));
+    }
 
     function getStoredAttacks() {
         const saved = localStorage.getItem('tw_planner_attacks');
@@ -142,7 +162,7 @@
         .tw-btn-danger { background: linear-gradient(180deg, #c0392b 0%, #7f8c8d 100%); background-color: #a93226; border-color: #641e16; }
         .tw-btn-secondary { background: linear-gradient(180deg, #888 0%, #444 100%); border-color: #222; }
         .tw-btn-action { background: linear-gradient(180deg, #2980b9 0%, #1a5276 100%); border-color: #1b4f72; }
-        
+
         .tw-unit-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -207,6 +227,11 @@
         }
         .tw-timer-warn { color: #c0392b; background: #fadbd8; }
         .tw-timer-ok { color: #27ae60; }
+        .tw-speed-edit {
+            cursor: pointer;
+            text-decoration: underline;
+            font-weight: bold;
+        }
     `;
     document.head.appendChild(style);
 
@@ -218,8 +243,8 @@
     container.style.left = initialPos.left;
 
     const currentWorld = (typeof game_data !== 'undefined' && game_data.world) ? game_data.world : "Desconocido";
+    const speeds = getStoredWorldSpeeds();
 
-    // Obtener fecha de mañana por defecto para el input de fecha
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const defaultDateStr = tomorrow.toISOString().split('T')[0];
@@ -232,9 +257,12 @@
 
         <div id="tw-planner-content" class="tw-planner-body">
             <!-- INFO DEL MUNDO -->
-            <div style="font-size: 10px; color: #572d00; margin-bottom: 6px; display:flex; justify-content:space-between;">
+            <div style="font-size: 10px; color: #572d00; margin-bottom: 6px; display:flex; justify-content:space-between; background:rgba(255,255,255,0.4); padding:3px 6px; border-radius:3px;">
                 <span><strong>Mundo:</strong> ${currentWorld}</span>
-                <span><strong>Vel. Mundo:</strong> ${worldSpeed} | <strong>Vel. Unidades:</strong> ${unitSpeedMultiplier}</span>
+                <span>
+                    <strong>Vel. Mundo:</strong> <span id="tw-ws-val" class="tw-speed-edit" title="Haz clic para cambiar">${speeds.worldSpeed}</span> | 
+                    <strong>Vel. Unidades:</strong> <span id="tw-us-val" class="tw-speed-edit" title="Haz clic para cambiar">${speeds.unitSpeed}</span>
+                </span>
             </div>
 
             <!-- FORMULARIO DE ATAQUE -->
@@ -303,7 +331,7 @@
 
     document.body.appendChild(container);
 
-    // Generar inputs para cada unidad
+    // Inputs para unidades
     const unitContainer = document.getElementById('tw-unit-inputs');
     Object.keys(BASE_UNIT_SPEEDS).forEach(unitKey => {
         const div = document.createElement('div');
@@ -315,7 +343,56 @@
         unitContainer.appendChild(div);
     });
 
-    // 4. LÓGICA ARRASTRE Y MINIMIZAR
+    // 4. PETICIÓN AUTOMÁTICA DE CONFIGURACIÓN DEL MUNDO (SI ES NECESARIO)
+    function fetchWorldConfig() {
+        if (typeof $ !== 'undefined') {
+            $.ajax({
+                url: '/interface.php?func=get_config',
+                type: 'GET',
+                dataType: 'xml',
+                success: function(xml) {
+                    const ws = parseFloat($(xml).find('speed').text());
+                    const us = parseFloat($(xml).find('unit_speed').text());
+                    if (!isNaN(ws) && !isNaN(us)) {
+                        saveWorldSpeeds(ws, us);
+                        document.getElementById('tw-ws-val').textContent = ws;
+                        document.getElementById('tw-us-val').textContent = us;
+                    }
+                }
+            });
+        }
+    }
+
+    // Si las velocidades almacenadas eran las predeterminadas 1 y 1, intentar obtener las reales
+    if (speeds.worldSpeed === 1 && speeds.unitSpeed === 1) {
+        fetchWorldConfig();
+    }
+
+    // EVENTOS PARA CAMBIAR VELOCIDADES MANUALMENTE AL HACER CLIC EN LOS NÚMEROS
+    function setupSpeedEditEvents() {
+        document.getElementById('tw-ws-val').addEventListener('click', () => {
+            const current = getStoredWorldSpeeds();
+            const val = prompt('Introduce la Velocidad del Mundo:', current.worldSpeed);
+            if (val !== null && !isNaN(parseFloat(val))) {
+                const newWs = parseFloat(val);
+                saveWorldSpeeds(newWs, current.unitSpeed);
+                document.getElementById('tw-ws-val').textContent = newWs;
+            }
+        });
+
+        document.getElementById('tw-us-val').addEventListener('click', () => {
+            const current = getStoredWorldSpeeds();
+            const val = prompt('Introduce la Velocidad de las Unidades:', current.unitSpeed);
+            if (val !== null && !isNaN(parseFloat(val))) {
+                const newUs = parseFloat(val);
+                saveWorldSpeeds(current.worldSpeed, newUs);
+                document.getElementById('tw-us-val').textContent = newUs;
+            }
+        });
+    }
+    setupSpeedEditEvents();
+
+    // 5. LÓGICA ARRASTRE Y MINIMIZAR
     const header = document.getElementById('tw-planner-header');
     let isDragging = false, offsetX = 0, offsetY = 0;
 
@@ -349,7 +426,7 @@
         }
     });
 
-    // 5. CÁLCULOS Y FUNCIONES
+    // 6. CÁLCULOS Y FUNCIONES
     function getSlowestUnitKey(unitsObj) {
         let slowestKey = null;
         let maxTime = -1;
@@ -391,7 +468,6 @@
         return url;
     }
 
-    // Renderizar ataques y cuentas atrás
     function renderAttacks() {
         const list = document.getElementById('tw-attack-list');
         list.innerHTML = '';
@@ -417,7 +493,7 @@
             });
 
             const rallyUrl = buildRallyUrl(atk);
-            const isWarn = diffMs < 60000 && diffMs > 0; // Menos de 1 minuto
+            const isWarn = diffMs < 60000 && diffMs > 0;
 
             card.innerHTML = `
                 <button class="tw-card-del" data-index="${index}">×</button>
@@ -447,7 +523,6 @@
         });
     }
 
-    // Bucle para actualizar temporizadores cada segundo
     setInterval(() => {
         const attacks = getStoredAttacks();
         if (attacks.length > 0) {
@@ -455,7 +530,7 @@
         }
     }, 1000);
 
-    // 6. EVENTOS DE BOTONES
+    // 7. EVENTOS DE FORMULARIO
     document.getElementById('tw-btn-current-village').addEventListener('click', () => {
         if (typeof game_data !== 'undefined' && game_data.village) {
             document.getElementById('tw-ox').value = game_data.village.x;
@@ -506,7 +581,6 @@
 
         const targetDate = new Date(`${dateVal}T${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`);
 
-        // Recopilar tropas
         const units = {};
         document.querySelectorAll('.tw-unit-count').forEach(input => {
             const count = parseInt(input.value) || 0;
@@ -521,13 +595,14 @@
             return;
         }
 
-        // Cálculo de tiempo de viaje ajustado a velocidad de mundo y tropas
         const dx = ox - tx;
         const dy = oy - ty;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
+        // Obtener velocidades actuales (guardadas o editadas)
+        const currentSpeeds = getStoredWorldSpeeds();
         const baseMinPerTile = BASE_UNIT_SPEEDS[slowestUnit];
-        const realMinPerTile = baseMinPerTile / (worldSpeed * unitSpeedMultiplier);
+        const realMinPerTile = baseMinPerTile / (currentSpeeds.worldSpeed * currentSpeeds.unitSpeed);
         const totalDurationMs = dist * realMinPerTile * 60 * 1000;
 
         const launchDate = new Date(targetDate.getTime() - totalDurationMs);
