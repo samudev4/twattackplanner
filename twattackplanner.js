@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    const SCRIPT_VERSION = "3.4";
+    const SCRIPT_VERSION = "3.5";
     const GITHUB_URL = "https://github.com/samudev4";
 
     if (document.getElementById('tw-planner-window')) {
@@ -268,7 +268,10 @@
     container.innerHTML = `
         <div id="tw-planner-header">
             <span>🛡️ Planificador de Ataques</span>
-            <button id="tw-btn-toggle" style="background:none; border:none; color:#f0e2be; cursor:pointer; font-weight:bold; font-size:16px;">_</button>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <button id="tw-btn-toggle" style="background:none; border:none; color:#f0e2be; cursor:pointer; font-weight:bold; font-size:16px;" title="Minimizar">_</button>
+                <button id="tw-btn-close" style="background:none; border:none; color:#f0e2be; cursor:pointer; font-weight:bold; font-size:16px;" title="Cerrar">✕</button>
+            </div>
         </div>
 
         <div id="tw-planner-content" class="tw-planner-body">
@@ -410,7 +413,7 @@
     }
     setupSpeedEditEvents();
 
-    // 5. LÓGICA ARRASTRE Y MINIMIZAR
+    // 5. LÓGICA ARRASTRE, MINIMIZAR Y CERRAR
     const header = document.getElementById('tw-planner-header');
     let isDragging = false, offsetX = 0, offsetY = 0;
 
@@ -442,6 +445,12 @@
             content.style.display = 'none';
             toggleBtn.textContent = '+';
         }
+    });
+
+    // BOTÓN CERRAR
+    const closeBtn = document.getElementById('tw-btn-close');
+    closeBtn.addEventListener('click', () => {
+        container.remove();
     });
 
     // 6. CÁLCULOS Y FUNCIONES
@@ -489,6 +498,7 @@
 
     function renderAttacks() {
         const list = document.getElementById('tw-attack-list');
+        if (!list) return;
         list.innerHTML = '';
         const attacks = getStoredAttacks();
 
@@ -548,9 +558,11 @@
     }
 
     setInterval(() => {
-        const attacks = getStoredAttacks();
-        if (attacks.length > 0) {
-            renderAttacks();
+        if (document.getElementById('tw-planner-window')) {
+            const attacks = getStoredAttacks();
+            if (attacks.length > 0) {
+                renderAttacks();
+            }
         }
     }, 1000);
 
