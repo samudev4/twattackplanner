@@ -245,7 +245,7 @@
                 </div>
 
                 <div class="tw-row">
-                    <span style="width:70px; font-weight:bold;">Tropa:</span>
+                    <span style="width:70px; font-weight:bold;">Tropa más lenta:</span>
                     <select id="tw-unit" class="tw-select"></select>
                 </div>
 
