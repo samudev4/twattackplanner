@@ -375,7 +375,7 @@
                 <span><strong>Mundo:</strong> ${currentWorld}</span>
                 <span>
                     <strong>Vel. Mundo:</strong> <span id="tw-ws-val" class="tw-speed-edit">${speeds.worldSpeed}</span> | 
-                    <strong>Unidades:</strong> <span id="tw-us-val" class="tw-speed-edit">${speeds.unitSpeed}</span>
+                    <strong>Vel. Unidades:</strong> <span id="tw-us-val" class="tw-speed-edit">${speeds.unitSpeed}</span>
                 </span>
             </div>
 
