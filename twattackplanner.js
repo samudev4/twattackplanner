@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    const SCRIPT_VERSION = "4.1";
+    const SCRIPT_VERSION = "4.2";
     const GITHUB_URL = "https://github.com/samudev4";
 
     if (document.getElementById('tw-planner-window')) {
@@ -12,7 +12,7 @@
         return;
     }
 
-    // 1. CONFIGURACIÓN DE UNIDADES Y VELOCIDADES BASE (Minutos por casilla en velocidad 1)
+    // 1. CONFIGURACIÓN DE UNIDADES Y VELOCIDADES BASE
     const BASE_UNIT_SPEEDS = {
         "spear": 18, "sword": 22, "axe": 18, "archer": 18,
         "spy": 9, "light": 10, "marcher": 10, "heavy": 11,
@@ -25,7 +25,7 @@
         "ram": "Ariete", "catapult": "Catapulta", "knight": "Paladín", "snob": "Noble"
     };
 
-    // LECTURA/ALMACENAMIENTO DE VELOCIDADES Y ATAQUES
+    // LECTURA/ALMACENAMIENTO DE DATOS
     function getStoredWorldSpeeds() {
         const saved = localStorage.getItem('tw_planner_world_speeds');
         if (saved) return JSON.parse(saved);
@@ -65,67 +65,65 @@
         localStorage.setItem('tw_planner_pos', JSON.stringify({ top, left }));
     }
 
-    // BÚSQUEDA PRECISA DEL NOMBRE DEL PUEBLO VÍA AJAX / MAPA
+    // BASE DE DATOS DE PUEBLOS EN MEMORIA (/map/village.txt)
+    let villageDbCache = null;
+
+    async function loadVillageDatabase() {
+        if (villageDbCache) return villageDbCache;
+
+        try {
+            const response = await fetch('/map/village.txt');
+            const text = await response.text();
+            
+            villageDbCache = new Map();
+            const lines = text.split('\n');
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+
+                const parts = line.split(',');
+                if (parts.length >= 4) {
+                    const rawName = parts[1];
+                    const x = parts[2];
+                    const y = parts[3];
+                    
+                    // Decodificar el nombre de la URL (+ por espacios)
+                    const decodedName = decodeURIComponent(rawName.replace(/\+/g, ' '));
+                    villageDbCache.set(`${x}|${y}`, decodedName);
+                }
+            }
+            return villageDbCache;
+        } catch (e) {
+            console.error("Error cargando /map/village.txt:", e);
+            return null;
+        }
+    }
+
+    // OBTIENE EL NOMBRE USANDO LA BASE DE DATOS OFICIAL DEL MUNDO
     async function fetchVillageName(x, y) {
         const targetX = parseInt(x);
         const targetY = parseInt(y);
+        const key = `${targetX}|${targetY}`;
 
-        // 1. Pueblo actual
-        if (typeof game_data !== 'undefined' && game_data.village && parseInt(game_data.village.x) === targetX && parseInt(game_data.village.y) === targetY) {
-            return game_data.village.name;
+        // 1. Consultar base de datos del mundo (/map/village.txt)
+        const db = await loadVillageDatabase();
+        if (db && db.has(key)) {
+            return db.get(key);
         }
 
-        // 2. Caché de mapa (si TWMap está activo)
+        // 2. Fallback a TWMap si estuviese cargado
         if (typeof TWMap !== 'undefined' && TWMap.villages) {
-            const key = targetX * 1000 + targetY;
-            if (TWMap.villages[key] && TWMap.villages[key].name) {
-                return TWMap.villages[key].name;
+            const mapKey = targetX * 1000 + targetY;
+            if (TWMap.villages[mapKey] && TWMap.villages[mapKey].name) {
+                return TWMap.villages[mapKey].name;
             }
-        }
-
-        const villageId = (typeof game_data !== 'undefined' && game_data.village) ? game_data.village.id : '';
-        const coordRegex = new RegExp(`\\(\\s*${targetX}\\s*\\|\\s*${targetY}\\s*\\)`);
-
-        // 3. Consulta vía info_village
-        try {
-            const html = await $.get(`/game.php?village=${villageId}&screen=info_village&x=${targetX}&y=${targetY}`);
-            const doc = new DOMParser().parseFromString(html, 'text/html');
-            const candidates = doc.querySelectorAll('#content_value h2, #content_value h3, #content_value th, #content_value .quickedit-title, .village_anchor');
-
-            for (let el of candidates) {
-                const text = el.textContent.trim();
-                if (coordRegex.test(text)) {
-                    let namePart = text.split(coordRegex)[0].trim();
-                    namePart = namePart.replace(/[\r\n\t]+/g, ' ').trim();
-                    if (namePart) return namePart;
-                }
-            }
-        } catch (e) {
-            console.error("Error obteniendo nombre vía info_village:", e);
-        }
-
-        // 4. Consulta alternativa vía plaza de armas (screen=place)
-        try {
-            const html = await $.get(`/game.php?village=${villageId}&screen=place&x=${targetX}&y=${targetY}`);
-            const doc = new DOMParser().parseFromString(html, 'text/html');
-            const links = doc.querySelectorAll('a[href*="screen=info_village"], #content_value h2, #content_value h3');
-
-            for (let el of links) {
-                const text = el.textContent.trim();
-                if (coordRegex.test(text)) {
-                    let namePart = text.split(coordRegex)[0].trim();
-                    namePart = namePart.replace(/[\r\n\t]+/g, ' ').trim();
-                    if (namePart) return namePart;
-                }
-            }
-        } catch (e) {
-            console.error("Error obteniendo nombre vía plaza:", e);
         }
 
         return `Pueblo (${targetX}|${targetY})`;
     }
 
-    // 2. ESTILOS CSS - INTERFAZ MEJORADA
+    // 2. ESTILOS CSS
     const style = document.createElement('style');
     style.innerHTML = `
         #tw-planner-window {
@@ -596,7 +594,6 @@
             return;
         }
 
-        // ORDENAR ATAQUES DE MENOR A MAYOR TIEMPO RESTANTE DE ENVÍO
         attacks.sort((a, b) => parseLaunchMs(a.launchDate) - parseLaunchMs(b.launchDate));
 
         const now = Date.now();
@@ -794,7 +791,7 @@
         }
 
         const addBtn = document.getElementById('tw-add-btn');
-        addBtn.textContent = '⏳ Obteniendo datos...';
+        addBtn.textContent = '⏳ Cargando datos del mundo...';
         addBtn.disabled = true;
 
         const [originName, targetName] = await Promise.all([
@@ -893,6 +890,9 @@
     document.getElementById('tw-close-bbcode-btn').addEventListener('click', () => {
         document.getElementById('tw-bbcode-panel').style.display = 'none';
     });
+
+    // Precargar BD en segundo plano
+    loadVillageDatabase();
 
     // Inicializar
     renderAttacks();
