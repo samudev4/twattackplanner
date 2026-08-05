@@ -42,7 +42,7 @@ Añadir el script a la barra de acceso rápido de tu cuenta de Guerras Tribales 
 2. **Definir Hora de Llegada:** Indica la fecha, hora, minutos, segundos y milisegundos en los que debe impactar el ataque.
 3. **Seleccionar Tropas:** Especifica las cantidades de tropas a enviar para que el script determine la velocidad del ejército.
 4. **Planificar:** Haz clic en **`➕ Añadir al Planificador`**.
-5. **Ejecutar o Compartir:** Usa el botón **`⚔️ Ir a la Plaza`** cuando el temporizador llegue a cero o exporta la lista mediante **`📋 Exportar BBCode`**.
+5. **Ejecutar o Compartir:** Usa el botón **`⚔️ Ir a la Plaza`** o exporta la lista mediante **`📋 Exportar BBCode`**.
 
 ---
 
@@ -54,7 +54,7 @@ El script detecta automáticamente la **Velocidad del Mundo** y la **Velocidad d
 
 ## 📝 Registro de Cambios
 
-Consulta el historial de actualizaciones y mejoras en el archivo [CHANGELOG.md](./changelog.MD).
+Consulta el historial de actualizaciones y mejoras en el archivo [CHANGELOG.md](./CHANGELOG.MD).
 
 ---
 
