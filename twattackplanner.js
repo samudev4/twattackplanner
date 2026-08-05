@@ -4,7 +4,7 @@
     const SCRIPT_VERSION = "4.5";
     const GITHUB_URL = "https://github.com/samudev4";
     // Define aquí la URL de tu archivo .txt o enlace al registro de cambios
-    const CHANGELOG_URL = "https://ejemplo.com/changelog.txt";
+    const CHANGELOG_URL = "https://github.com/samudev4/twattackplanner/blob/main/chagelog.txt";
 
     // 0. LIMPIEZA DE INSTANCIAS PREVIAS (Evita duplicados en memoria)
     if (window.twPlannerInterval) {
