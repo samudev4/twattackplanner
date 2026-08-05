@@ -1,7 +1,7 @@
 # 🛡️ Tribal Wars Attack Planner
 
 ![Version](https://img.shields.io/badge/version-4.5-blue.svg)
-![Languages](https://img.shields.io/badge/languages-ES%20%7C-green.svg)
+![Languages](https://img.shields.io/badge/languages-ES-green.svg)
 ![Platform](https://img.shields.io/badge/platform-Tampermonkey%20%7C%20Violentmonkey-orange.svg)
 ![License](https://img.shields.io/badge/license-MIT-brightgreen.svg)
 
