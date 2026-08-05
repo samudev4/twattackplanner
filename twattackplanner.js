@@ -380,14 +380,14 @@
             </div>
 
             <div id="tw-form-panel" class="tw-box">
-                <div class="tw-title-sm">🎯 Configurar Nuevo Ataque</div>
+                <div class="tw-title-sm">🎯 Planificar Nuevo Ataque</div>
 
                 <div class="tw-row">
                     <span style="width:65px; font-weight:bold;">Origen:</span>
                     <input type="text" inputmode="numeric" maxlength="3" id="tw-ox" class="tw-input tw-input-coord" placeholder="XXX">
                     <span style="font-weight:bold; color:#8a4b10;">|</span>
                     <input type="text" inputmode="numeric" maxlength="3" id="tw-oy" class="tw-input tw-input-coord" placeholder="YYY">
-                    <button id="tw-btn-current-village" class="tw-btn tw-btn-secondary" style="margin-left:auto;">📍 Usar actual</button>
+                    <button id="tw-btn-current-village" class="tw-btn tw-btn-secondary" style="margin-left:auto;">📍 Usar pueblo actual</button>
                 </div>
 
                 <div class="tw-row">
@@ -420,7 +420,7 @@
 
             <div class="tw-box" style="margin-bottom:0;">
                 <div class="tw-title-sm" style="display:flex; justify-content:space-between; align-items:center;">
-                    <span>📜 Plan de Ataques</span>
+                    <span>📜 Ataques Planificados</span>
                     <div>
                         <button id="tw-export-bb-btn" class="tw-btn tw-btn-action">📋 Exportar BBCode</button>
                         <button id="tw-clear-all-btn" style="background:none; border:none; color:#c0392b; cursor:pointer; font-size:12px; text-decoration:underline; margin-left:8px; font-weight:bold;">Borrar Todo</button>
@@ -439,8 +439,8 @@
             </div>
 
             <div class="tw-footer">
-                <span>hecho por <strong>samudev4</strong></span>
-                <span>v${SCRIPT_VERSION} | <a href="${GITHUB_URL}" target="_blank" rel="noopener noreferrer">GitHub</a></span>
+                <span>Hecho por <strong>REDWALDA</strong></span>
+                <span>v${SCRIPT_VERSION} (05/08/2026)| <a href="${GITHUB_URL}" target="_blank" rel="noopener noreferrer">GitHub</a></span>
             </div>
         </div>
     `;
