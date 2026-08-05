@@ -2,7 +2,7 @@
     'use strict';
 
     const SCRIPT_VERSION = "4.5";
-    const GITHUB_URL = "https://github.com/samudev4/twattackplanner.js";
+    const GITHUB_URL = "https://github.com/samudev4/twattackplanner";
     // Define aquí la URL de tu archivo .txt o enlace al registro de cambios
     const CHANGELOG_URL = "https://github.com/samudev4/twattackplanner/blob/main/CHANGELOG.MD";
 
