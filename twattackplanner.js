@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    const SCRIPT_VERSION = "3.7";
+    const SCRIPT_VERSION = "3.8";
     const GITHUB_URL = "https://github.com/samudev4";
 
     if (document.getElementById('tw-planner-window')) {
@@ -168,6 +168,18 @@
         .tw-btn-action { background: linear-gradient(180deg, #2980b9 0%, #1a5276 100%); border-color: #1b4f72; }
         .tw-btn-action:hover { background: linear-gradient(180deg, #5dade2 0%, #21618c 100%); }
 
+        .tw-copy-time-btn {
+            background: #fff;
+            border: 1px solid #7d5128;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            padding: 1px 4px;
+            margin-left: 5px;
+            transition: background 0.2s;
+        }
+        .tw-copy-time-btn:hover { background: #e1c38a; }
+
         .tw-unit-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -234,7 +246,7 @@
         .tw-timer {
             font-weight: bold;
             font-family: monospace;
-            font-size: 14px;
+            font-size: 13px;
             padding: 4px 8px;
             background: #fff;
             border: 1px solid #bbb;
@@ -244,6 +256,7 @@
         }
         .tw-timer-warn { color: #c0392b; background: #fadbd8; border-color:#e6b0aa; }
         .tw-timer-ok { color: #27ae60; }
+        .tw-timer-expired { color: #721c24; background: #f8d7da; border-color: #f5c6cb; }
         .tw-speed-edit { cursor: pointer; text-decoration: underline; font-weight: bold; color: #1a5276; }
         .tw-speed-edit:hover { color: #2980b9; }
     `;
@@ -280,7 +293,7 @@
                 <span><strong>Mundo:</strong> ${currentWorld}</span>
                 <span>
                     <strong>Vel. Mundo:</strong> <span id="tw-ws-val" class="tw-speed-edit" title="Cambiar">${speeds.worldSpeed}</span> | 
-                    <strong>Vel. Unidades:</strong> <span id="tw-us-val" class="tw-speed-edit" title="Cambiar">${speeds.unitSpeed}</span>
+                    <strong>Unidades:</strong> <span id="tw-us-val" class="tw-speed-edit" title="Cambiar">${speeds.unitSpeed}</span>
                 </span>
             </div>
 
@@ -450,13 +463,12 @@
         }
     });
 
-    // BOTÓN CERRAR
     const closeBtn = document.getElementById('tw-btn-close');
     closeBtn.addEventListener('click', () => {
         container.remove();
     });
 
-    // 6. CÁLCULOS Y FUNCIONES
+    // 6. CÁLCULOS Y FUNCIONES AUXILIARES
     function getSlowestUnitKey(unitsObj) {
         let slowestKey = null;
         let maxTime = -1;
@@ -476,6 +488,13 @@
         const pad = n => String(n).padStart(2, '0');
         const padMs = n => String(n).padStart(3, '0');
         return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${padMs(d.getMilliseconds())}`;
+    }
+
+    function getTimeHHMMSS(dateStr) {
+        if (!dateStr) return '';
+        const parts = dateStr.split(' ');
+        if (parts.length < 2) return '';
+        return parts[1].split('.')[0];
     }
 
     function formatDuration(ms) {
@@ -527,7 +546,19 @@
             });
 
             const rallyUrl = buildRallyUrl(atk);
-            const isWarn = diffMs < 60000 && diffMs > 0;
+            const launchHHMMSS = getTimeHHMMSS(atk.launchDate);
+            const targetHHMMSS = getTimeHHMMSS(atk.targetDate);
+
+            // Determinar texto y clase según si ya venció el ataque
+            let timerText = formatDuration(diffMs);
+            let timerClass = 'tw-timer-ok';
+
+            if (diffMs <= 0) {
+                timerText = '⚠️ ATRASADO';
+                timerClass = 'tw-timer-expired';
+            } else if (diffMs < 60000) {
+                timerClass = 'tw-timer-warn';
+            }
 
             card.innerHTML = `
                 <button class="tw-card-del" data-index="${index}" title="Eliminar Ataque">×</button>
@@ -538,11 +569,17 @@
                 <div style="display:flex; justify-content:space-between; align-items:flex-end;">
                     <div style="line-height:1.5;">
                         <div style="color:#2c3e50;">⏱️ Duración: <strong>${atk.durationStr}</strong></div>
-                        <div style="color:#d35400;">🚀 Enviar: <strong>${atk.launchDate}</strong></div>
-                        <div style="color:#27ae60;">🎯 Llegada: <strong>${atk.targetDate}</strong></div>
+                        <div style="color:#d35400;">
+                            🚀 Enviar: <strong>${atk.launchDate}</strong>
+                            <button class="tw-copy-time-btn" data-time="${launchHHMMSS}" title="Copiar hora HH:MM:SS">📋</button>
+                        </div>
+                        <div style="color:#27ae60;">
+                            🎯 Llegada: <strong>${atk.targetDate}</strong>
+                            <button class="tw-copy-time-btn" data-time="${targetHHMMSS}" title="Copiar hora HH:MM:SS">📋</button>
+                        </div>
                     </div>
                     <div style="text-align:right;">
-                        <div class="tw-timer ${isWarn ? 'tw-timer-warn' : 'tw-timer-ok'}">${formatDuration(diffMs)}</div>
+                        <div class="tw-timer ${timerClass}">${timerText}</div>
                         <div style="margin-top:6px;">
                             <a href="${rallyUrl}" target="_blank" class="tw-btn tw-btn-action" style="text-decoration:none; display:inline-block;">⚔️ Ir a la Plaza</a>
                         </div>
@@ -550,10 +587,45 @@
                 </div>
             `;
 
+            // Eliminar tarjeta
             card.querySelector('.tw-card-del').addEventListener('click', () => {
                 attacks.splice(index, 1);
                 saveAttacks(attacks);
                 renderAttacks();
+            });
+
+            // Botones de copia individual de horas HH:MM:SS
+            card.querySelectorAll('.tw-copy-time-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const timeStr = btn.getAttribute('data-time');
+                    const orig = btn.textContent;
+
+                    const setOk = () => {
+                        btn.textContent = '✅';
+                        setTimeout(() => { btn.textContent = orig; }, 1200);
+                    };
+
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(timeStr).then(setOk).catch(() => {
+                            const input = document.createElement('input');
+                            input.value = timeStr;
+                            document.body.appendChild(input);
+                            input.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(input);
+                            setOk();
+                        });
+                    } else {
+                        const input = document.createElement('input');
+                        input.value = timeStr;
+                        document.body.appendChild(input);
+                        input.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(input);
+                        setOk();
+                    }
+                });
             });
 
             list.appendChild(card);
@@ -689,7 +761,7 @@
         document.getElementById('tw-bbcode-panel').style.display = 'block';
     });
 
-    // LÓGICA DE COPIAR BBCODE
+    // LÓGICA DE COPIAR BBCODE COMPLETO
     document.getElementById('tw-copy-bbcode-btn').addEventListener('click', () => {
         const textarea = document.getElementById('tw-bbcode-output');
         textarea.select();
