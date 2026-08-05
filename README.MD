@@ -30,7 +30,7 @@ Añadir el script a la barra de acceso rápido de tu cuenta de Guerras Tribales 
    * **URL de la imagen:** *(Opcional)* Enlace a un icono para personalizar el botón.
    * **URL del objetivo:** Pega exactamente la siguiente línea de código:
      ```javascript
-     javascript:$.getScript('[https://samudev4.github.io/twattackplanner/twattackplanner.js](https://samudev4.github.io/twattackplanner/twattackplanner.js)');
+     javascript:$.getScript('https://samudev4.github.io/twattackplanner/twattackplanner.js');
      ```
 4. Guarda los cambios. El botón estará disponible en tu barra superior listo para ejecutarse en cualquier pantalla del juego.
 
