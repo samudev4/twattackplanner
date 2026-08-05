@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    const SCRIPT_VERSION = "4.2";
+    const SCRIPT_VERSION = "4.3";
     const GITHUB_URL = "https://github.com/samudev4";
 
     if (document.getElementById('tw-planner-window')) {
@@ -84,13 +84,13 @@
 
                 const parts = line.split(',');
                 if (parts.length >= 4) {
+                    const id = parts[0];
                     const rawName = parts[1];
                     const x = parts[2];
                     const y = parts[3];
                     
-                    // Decodificar el nombre de la URL (+ por espacios)
                     const decodedName = decodeURIComponent(rawName.replace(/\+/g, ' '));
-                    villageDbCache.set(`${x}|${y}`, decodedName);
+                    villageDbCache.set(`${x}|${y}`, { id, name: decodedName });
                 }
             }
             return villageDbCache;
@@ -100,27 +100,38 @@
         }
     }
 
-    // OBTIENE EL NOMBRE USANDO LA BASE DE DATOS OFICIAL DEL MUNDO
-    async function fetchVillageName(x, y) {
+    // OBTIENE ID Y NOMBRE DE CUALQUIER PUEBLO
+    async function fetchVillageData(x, y) {
         const targetX = parseInt(x);
         const targetY = parseInt(y);
         const key = `${targetX}|${targetY}`;
 
-        // 1. Consultar base de datos del mundo (/map/village.txt)
+        // 1. Consultar base de datos del mundo
         const db = await loadVillageDatabase();
         if (db && db.has(key)) {
             return db.get(key);
         }
 
-        // 2. Fallback a TWMap si estuviese cargado
+        // 2. Fallback a TWMap
         if (typeof TWMap !== 'undefined' && TWMap.villages) {
             const mapKey = targetX * 1000 + targetY;
-            if (TWMap.villages[mapKey] && TWMap.villages[mapKey].name) {
-                return TWMap.villages[mapKey].name;
+            if (TWMap.villages[mapKey]) {
+                return {
+                    id: TWMap.villages[mapKey].id || null,
+                    name: TWMap.villages[mapKey].name || `Pueblo (${targetX}|${targetY})`
+                };
             }
         }
 
-        return `Pueblo (${targetX}|${targetY})`;
+        return { id: null, name: `Pueblo (${targetX}|${targetY})` };
+    }
+
+    function getVillageUrl(id, x, y) {
+        const currentVid = (typeof game_data !== 'undefined' && game_data.village) ? game_data.village.id : '';
+        if (id) {
+            return `/game.php?village=${currentVid}&screen=info_village&id=${id}`;
+        }
+        return `/game.php?village=${currentVid}&screen=map&x=${x}&y=${y}`;
     }
 
     // 2. ESTILOS CSS
@@ -241,6 +252,16 @@
         }
         .tw-badge-ok { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .tw-badge-warn { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        .tw-village-link {
+            color: #8a4b10;
+            text-decoration: underline;
+            font-weight: bold;
+            transition: color 0.2s;
+        }
+        .tw-village-link:hover {
+            color: #d35400;
+        }
 
         .tw-unit-grid {
             display: grid;
@@ -638,13 +659,19 @@
                 timerClass = 'tw-timer-warn';
             }
 
-            const originDisplayName = atk.originName ? `<strong>${atk.originName}</strong> (${atk.ox}|${atk.oy})` : `${atk.ox}|${atk.oy}`;
-            const targetDisplayName = atk.targetName ? `<strong>${atk.targetName}</strong> (${atk.tx}|${atk.ty})` : `${atk.tx}|${atk.ty}`;
+            const originUrl = getVillageUrl(atk.originId, atk.ox, atk.oy);
+            const targetUrl = getVillageUrl(atk.targetId, atk.tx, atk.ty);
+
+            const originText = atk.originName ? `${atk.originName} (${atk.ox}|${atk.oy})` : `${atk.ox}|${atk.oy}`;
+            const targetText = atk.targetName ? `${atk.targetName} (${atk.tx}|${atk.ty})` : `${atk.tx}|${atk.ty}`;
+
+            const originLink = `<a href="${originUrl}" target="_blank" class="tw-village-link" title="Ver info del pueblo">${originText}</a>`;
+            const targetLink = `<a href="${targetUrl}" target="_blank" class="tw-village-link" title="Ver info del pueblo">${targetText}</a>`;
 
             card.innerHTML = `
                 <button class="tw-card-del" data-index="${index}" title="Eliminar Ataque">×</button>
                 <div style="font-weight:normal; color:#603000; font-size:13px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; padding-right:25px;">
-                    <div>📍 ${originDisplayName} ➔ 🎯 ${targetDisplayName}</div>
+                    <div>📍 ${originLink} ➔ 🎯 ${targetLink}</div>
                     ${villageBadgeHtml}
                 </div>
                 <div style="font-size:11px; color:#444; margin-bottom: 6px; padding:4px; background:rgba(255,255,255,0.5); border-radius:3px;">
@@ -794,9 +821,9 @@
         addBtn.textContent = '⏳ Cargando datos del mundo...';
         addBtn.disabled = true;
 
-        const [originName, targetName] = await Promise.all([
-            fetchVillageName(ox, oy),
-            fetchVillageName(tx, ty)
+        const [originData, targetData] = await Promise.all([
+            fetchVillageData(ox, oy),
+            fetchVillageData(tx, ty)
         ]);
 
         addBtn.textContent = '➕ Añadir al Planificador';
@@ -815,8 +842,10 @@
 
         const newAttack = {
             ox, oy, tx, ty,
-            originName,
-            targetName,
+            originId: originData.id,
+            originName: originData.name,
+            targetId: targetData.id,
+            targetName: targetData.name,
             units,
             dist: dist.toFixed(2),
             durationStr: formatDuration(totalDurationMs),
