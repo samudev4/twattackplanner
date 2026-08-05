@@ -1,11 +1,12 @@
 (function() {
     'use strict';
 
-    const SCRIPT_VERSION = "4.6";
+    const SCRIPT_VERSION = "4.5";
     const GITHUB_URL = "https://github.com/samudev4";
-    const CHANGELOG_URL = "https://github.com/samudev4/twattackplanner/blob/main/chagelog.MD";
+    // Define aquí la URL de tu archivo .txt o enlace al registro de cambios
+    const CHANGELOG_URL = "https://github.com/samudev4/twattackplanner/blob/main/CHANGELOG.MD";
 
-    // 0. LIMPIEZA DE INSTANCIAS PREVIAS
+    // 0. LIMPIEZA DE INSTANCIAS PREVIAS (Evita duplicados en memoria)
     if (window.twPlannerInterval) {
         clearInterval(window.twPlannerInterval);
         window.twPlannerInterval = null;
@@ -16,148 +17,17 @@
         existingWindow.remove();
     }
 
-    // 1. DICCIONARIO DE TRADUCCIONES (i18n)
-    const TRANSLATIONS = {
-        es: {
-            flag: "🇪🇸",
-            title: "🛡️ Planificador de Ataques",
-            minimize: "Minimizar",
-            close: "Cerrar",
-            changeLang: "Cambiar idioma / Change language",
-            world: "Mundo:",
-            worldSpeed: "Vel. Mundo:",
-            unitSpeed: "Vel. Unidades:",
-            planAttack: "🎯 Planificar Nuevo Ataque",
-            origin: "Origen:",
-            target: "Destino:",
-            arrival: "Llegada:",
-            useCurrentVillage: "📍 Usar pueblo actual",
-            troopsToSend: "Tropas a enviar:",
-            addToPlanner: "➕ Añadir al Planificador",
-            loadingWorldData: "⏳ Cargando datos del mundo...",
-            clearForm: "🧹 Limpiar",
-            clearFormTitle: "Limpiar formulario",
-            plannedAttacks: "📜 Ataques Planificados",
-            exportBBCode: "📋 Exportar BBCode",
-            deleteAll: "Borrar Todo",
-            generatedBBCode: "📋 BBCode Generado",
-            copyBBCode: "📋 Copiar BBCode",
-            copied: "✅ ¡Copiado!",
-            closeBtn: "Cerrar",
-            by: "Hecho por",
-            changelog: "Registro de cambios",
-            noAttacks: "No hay ataques planificados",
-            inVillage: "✅ Estás en el pueblo",
-            notInVillage: "⚠️ No estás en el pueblo",
-            duration: "⏱️ Duración:",
-            send: "🚀 Enviar:",
-            arrivalLabel: "🎯 Llegada:",
-            troopsLabel: "Tropas:",
-            unspecified: "Sin especificar",
-            overdue: "⚠️ ATRASADO",
-            goToRally: "⚔️ Ir a la Plaza",
-            bbTitle: "🛡️ PLANIFICACIÓN DE ATAQUES",
-            bbOrigin: "Origen:",
-            bbTarget: "Destino:",
-            bbTroops: "Tropas:",
-            bbDuration: "Duración:",
-            bbSend: "🚀 Enviar:",
-            bbArrival: "🎯 Llegada:",
-            promptWorldSpeed: "Introduce la Velocidad del Mundo:",
-            promptUnitSpeed: "Introduce la Velocidad de las Unidades:",
-            alertCoords: "Por favor, ingresa coordenadas válidas de Origen y Destino.",
-            alertDate: "Por favor, selecciona una fecha válida.",
-            alertTroops: "Debes indicar la cantidad de al menos una tropa para el ataque.",
-            alertCurrentVillageFail: "No se pudieron leer las coordenadas del pueblo actual.",
-            confirmDeleteAll: "¿Seguro que quieres borrar todos los ataques del planificador?",
-            alertNoAttacksExport: "No hay ataques para exportar.",
-            villageFallback: "Pueblo",
-            units: {
-                "spear": "Lanza", "sword": "Espada", "axe": "Hacha", "archer": "Arquero",
-                "spy": "Espía", "light": "C. Ligera", "marcher": "Arquero C.", "heavy": "C. Pesada",
-                "ram": "Ariete", "catapult": "Catapulta", "knight": "Paladín", "snob": "Noble"
-            }
-        },
-        en: {
-            flag: "🇬🇧",
-            title: "🛡️ Attack Planner",
-            minimize: "Minimize",
-            close: "Close",
-            changeLang: "Switch language / Cambiar idioma",
-            world: "World:",
-            worldSpeed: "World Speed:",
-            unitSpeed: "Unit Speed:",
-            planAttack: "🎯 Plan New Attack",
-            origin: "Origin:",
-            target: "Target:",
-            arrival: "Arrival:",
-            useCurrentVillage: "📍 Use current village",
-            troopsToSend: "Troops to send:",
-            addToPlanner: "➕ Add to Planner",
-            loadingWorldData: "⏳ Loading world data...",
-            clearForm: "🧹 Clear",
-            clearFormTitle: "Clear form",
-            plannedAttacks: "📜 Planned Attacks",
-            exportBBCode: "📋 Export BBCode",
-            deleteAll: "Delete All",
-            generatedBBCode: "📋 Generated BBCode",
-            copyBBCode: "📋 Copy BBCode",
-            copied: "✅ Copied!",
-            closeBtn: "Close",
-            by: "Created by",
-            changelog: "Changelog",
-            noAttacks: "No planned attacks",
-            inVillage: "✅ You are in village",
-            notInVillage: "⚠️ Not in village",
-            duration: "⏱️ Duration:",
-            send: "🚀 Send:",
-            arrivalLabel: "🎯 Arrival:",
-            troopsLabel: "Troops:",
-            unspecified: "Not specified",
-            overdue: "⚠️ OVERDUE",
-            goToRally: "⚔️ Go to Rally Point",
-            bbTitle: "🛡️ ATTACK PLANNING",
-            bbOrigin: "Origin:",
-            bbTarget: "Target:",
-            bbTroops: "Troops:",
-            bbDuration: "Duration:",
-            bbSend: "🚀 Send:",
-            bbArrival: "🎯 Arrival:",
-            promptWorldSpeed: "Enter World Speed:",
-            promptUnitSpeed: "Enter Unit Speed:",
-            alertCoords: "Please enter valid Origin and Destination coordinates.",
-            alertDate: "Please select a valid date.",
-            alertTroops: "You must specify at least one troop quantity for the attack.",
-            alertCurrentVillageFail: "Could not read current village coordinates.",
-            confirmDeleteAll: "Are you sure you want to delete all planned attacks?",
-            alertNoAttacksExport: "No attacks to export.",
-            villageFallback: "Village",
-            units: {
-                "spear": "Spear", "sword": "Sword", "axe": "Axe", "archer": "Archer",
-                "spy": "Scout", "light": "LC", "marcher": "Mounted Arch.", "heavy": "HC",
-                "ram": "Ram", "catapult": "Catapult", "knight": "Paladin", "snob": "Nobleman"
-            }
-        }
-    };
-
-    function getStoredLang() {
-        return localStorage.getItem('tw_planner_lang') || 'es';
-    }
-
-    function saveLang(lang) {
-        localStorage.setItem('tw_planner_lang', lang);
-    }
-
-    let currentLang = getStoredLang();
-    function t(key) {
-        return TRANSLATIONS[currentLang][key] || TRANSLATIONS['es'][key] || key;
-    }
-
-    // CONFIGURACIÓN DE UNIDADES Y VELOCIDADES BASE
+    // 1. CONFIGURACIÓN DE UNIDADES Y VELOCIDADES BASE
     const BASE_UNIT_SPEEDS = {
         "spear": 18, "sword": 22, "axe": 18, "archer": 18,
         "spy": 9, "light": 10, "marcher": 10, "heavy": 11,
         "ram": 30, "catapult": 30, "knight": 10, "snob": 35
+    };
+
+    const UNIT_NAMES = {
+        "spear": "Lanza", "sword": "Espada", "axe": "Hacha", "archer": "Arquero",
+        "spy": "Espía", "light": "C. Ligera", "marcher": "Arquero C.", "heavy": "C. Pesada",
+        "ram": "Ariete", "catapult": "Catapulta", "knight": "Paladín", "snob": "Noble"
     };
 
     // LECTURA/ALMACENAMIENTO DE DATOS
@@ -200,7 +70,7 @@
         localStorage.setItem('tw_planner_pos', JSON.stringify({ top, left }));
     }
 
-    // BASE DE DATOS DE PUEBLOS EN MEMORIA
+    // BASE DE DATOS DE PUEBLOS EN MEMORIA (/map/village.txt)
     let villageDbCache = null;
 
     async function loadVillageDatabase() {
@@ -235,6 +105,7 @@
         }
     }
 
+    // OBTIENE ID Y NOMBRE DE CUALQUIER PUEBLO
     async function fetchVillageData(x, y) {
         const targetX = parseInt(x);
         const targetY = parseInt(y);
@@ -250,12 +121,12 @@
             if (TWMap.villages[mapKey]) {
                 return {
                     id: TWMap.villages[mapKey].id || null,
-                    name: TWMap.villages[mapKey].name || `${t('villageFallback')} (${targetX}|${targetY})`
+                    name: TWMap.villages[mapKey].name || `Pueblo (${targetX}|${targetY})`
                 };
             }
         }
 
-        return { id: null, name: `${t('villageFallback')} (${targetX}|${targetY})` };
+        return { id: null, name: `Pueblo (${targetX}|${targetY})` };
     }
 
     function getVillageUrl(id, x, y) {
@@ -266,7 +137,7 @@
         return `/game.php?village=${currentVid}&screen=map&x=${x}&y=${y}`;
     }
 
-    // ESTILOS CSS
+    // 2. ESTILOS CSS
     const style = document.createElement('style');
     style.id = 'tw-planner-styles';
     style.innerHTML = `
@@ -392,7 +263,9 @@
             font-weight: bold;
             transition: color 0.2s;
         }
-        .tw-village-link:hover { color: #d35400; }
+        .tw-village-link:hover {
+            color: #d35400;
+        }
 
         .tw-unit-grid {
             display: grid;
@@ -474,128 +347,120 @@
     if (oldStyle) oldStyle.remove();
     document.head.appendChild(style);
 
-    // ESTRUCTURA INTERFAZ
+    // 3. ESTRUCTURA INTERFAZ
     const initialPos = getStoredPosition();
     const container = document.createElement('div');
     container.id = 'tw-planner-window';
     container.style.top = initialPos.top;
     container.style.left = initialPos.left;
 
-    function renderUI() {
-        const currentWorld = (typeof game_data !== 'undefined' && game_data.world) ? game_data.world : "Desconocido";
-        const speeds = getStoredWorldSpeeds();
+    const currentWorld = (typeof game_data !== 'undefined' && game_data.world) ? game_data.world : "Desconocido";
+    const speeds = getStoredWorldSpeeds();
 
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const dd = String(today.getDate()).padStart(2, '0');
-        const defaultDateStr = `${yyyy}-${mm}-${dd}`;
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const defaultDateStr = `${yyyy}-${mm}-${dd}`;
 
-        container.innerHTML = `
-            <div id="tw-planner-header">
-                <span id="tw-title-label">${t('title')}</span>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <button id="tw-btn-lang" style="background:none; border:none; cursor:pointer; font-size:16px;" title="${t('changeLang')}">${t('flag')}</button>
-                    <button id="tw-btn-toggle" style="background:none; border:none; color:#f0e2be; cursor:pointer; font-weight:bold; font-size:16px;" title="${t('minimize')}">_</button>
-                    <button id="tw-btn-close" style="background:none; border:none; color:#f0e2be; cursor:pointer; font-weight:bold; font-size:16px;" title="${t('close')}">✕</button>
+    container.innerHTML = `
+        <div id="tw-planner-header">
+            <span>🛡️ Planificador de Ataques</span>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <button id="tw-btn-toggle" style="background:none; border:none; color:#f0e2be; cursor:pointer; font-weight:bold; font-size:16px;" title="Minimizar">_</button>
+                <button id="tw-btn-close" style="background:none; border:none; color:#f0e2be; cursor:pointer; font-weight:bold; font-size:16px;" title="Cerrar">✕</button>
+            </div>
+        </div>
+
+        <div id="tw-planner-content" class="tw-planner-body">
+            <div style="font-size: 12px; color: #572d00; margin-bottom: 10px; display:flex; justify-content:space-between; background:rgba(255,255,255,0.6); padding:6px 10px; border-radius:5px; border: 1px solid #d4b58a;">
+                <span><strong>Mundo:</strong> ${currentWorld}</span>
+                <span>
+                    <strong>Vel. Mundo:</strong> <span id="tw-ws-val" class="tw-speed-edit">${speeds.worldSpeed}</span> | 
+                    <strong>Vel. Unidades:</strong> <span id="tw-us-val" class="tw-speed-edit">${speeds.unitSpeed}</span>
+                </span>
+            </div>
+
+            <div id="tw-form-panel" class="tw-box">
+                <div class="tw-title-sm">🎯 Planificar Nuevo Ataque</div>
+
+                <div class="tw-row">
+                    <span style="width:65px; font-weight:bold;">Origen:</span>
+                    <input type="text" inputmode="numeric" maxlength="3" id="tw-ox" class="tw-input tw-input-coord" placeholder="XXX">
+                    <span style="font-weight:bold; color:#8a4b10;">|</span>
+                    <input type="text" inputmode="numeric" maxlength="3" id="tw-oy" class="tw-input tw-input-coord" placeholder="YYY">
+                    <button id="tw-btn-current-village" class="tw-btn tw-btn-secondary" style="margin-left:auto;">📍 Usar pueblo actual</button>
+                </div>
+
+                <div class="tw-row">
+                    <span style="width:65px; font-weight:bold;">Destino:</span>
+                    <input type="text" inputmode="numeric" maxlength="3" id="tw-tx" class="tw-input tw-input-coord" placeholder="XXX">
+                    <span style="font-weight:bold; color:#8a4b10;">|</span>
+                    <input type="text" inputmode="numeric" maxlength="3" id="tw-ty" class="tw-input tw-input-coord" placeholder="YYY">
+                </div>
+
+                <div class="tw-row" style="margin-top: 10px;">
+                    <span style="width:65px; font-weight:bold;">Llegada:</span>
+                    <input type="date" id="tw-target-date" class="tw-input" value="${defaultDateStr}" style="width: 130px;">
+                    <input type="text" inputmode="numeric" maxlength="2" id="tw-h" class="tw-input tw-input-time" placeholder="HH">
+                    <span style="font-weight:bold;">:</span>
+                    <input type="text" inputmode="numeric" maxlength="2" id="tw-m" class="tw-input tw-input-time" placeholder="MM">
+                    <span style="font-weight:bold;">:</span>
+                    <input type="text" inputmode="numeric" maxlength="2" id="tw-s" class="tw-input tw-input-time" placeholder="SS">
+                    <span style="font-weight:bold;">.</span>
+                    <input type="text" inputmode="numeric" maxlength="3" id="tw-ms" class="tw-input tw-input-ms" placeholder="MS">
+                </div>
+
+                <div style="font-weight:bold; margin-top:12px; margin-bottom:4px; border-bottom: 1px dashed #b89160; padding-bottom:4px;">Tropas a enviar:</div>
+                <div class="tw-unit-grid" id="tw-unit-inputs"></div>
+
+                <div style="display:flex; gap:10px; margin-top:12px;">
+                    <button id="tw-add-btn" class="tw-btn" style="flex:2; font-size: 14px;">➕ Añadir al Planificador</button>
+                    <button id="tw-clear-form-btn" class="tw-btn tw-btn-danger" title="Limpiar formulario" style="flex:1;">🧹 Limpiar</button>
                 </div>
             </div>
 
-            <div id="tw-planner-content" class="tw-planner-body">
-                <div style="font-size: 12px; color: #572d00; margin-bottom: 10px; display:flex; justify-space-between; background:rgba(255,255,255,0.6); padding:6px 10px; border-radius:5px; border: 1px solid #d4b58a;">
-                    <span><strong>${t('world')}</strong> ${currentWorld}</span>
-                    <span>
-                        <strong>${t('worldSpeed')}</strong> <span id="tw-ws-val" class="tw-speed-edit">${speeds.worldSpeed}</span> | 
-                        <strong>${t('unitSpeed')}</strong> <span id="tw-us-val" class="tw-speed-edit">${speeds.unitSpeed}</span>
-                    </span>
-                </div>
-
-                <div id="tw-form-panel" class="tw-box">
-                    <div class="tw-title-sm">${t('planAttack')}</div>
-
-                    <div class="tw-row">
-                        <span style="width:65px; font-weight:bold;">${t('origin')}</span>
-                        <input type="text" inputmode="numeric" maxlength="3" id="tw-ox" class="tw-input tw-input-coord" placeholder="XXX">
-                        <span style="font-weight:bold; color:#8a4b10;">|</span>
-                        <input type="text" inputmode="numeric" maxlength="3" id="tw-oy" class="tw-input tw-input-coord" placeholder="YYY">
-                        <button id="tw-btn-current-village" class="tw-btn tw-btn-secondary" style="margin-left:auto;">${t('useCurrentVillage')}</button>
-                    </div>
-
-                    <div class="tw-row">
-                        <span style="width:65px; font-weight:bold;">${t('target')}</span>
-                        <input type="text" inputmode="numeric" maxlength="3" id="tw-tx" class="tw-input tw-input-coord" placeholder="XXX">
-                        <span style="font-weight:bold; color:#8a4b10;">|</span>
-                        <input type="text" inputmode="numeric" maxlength="3" id="tw-ty" class="tw-input tw-input-coord" placeholder="YYY">
-                    </div>
-
-                    <div class="tw-row" style="margin-top: 10px;">
-                        <span style="width:65px; font-weight:bold;">${t('arrival')}</span>
-                        <input type="date" id="tw-target-date" class="tw-input" value="${defaultDateStr}" style="width: 130px;">
-                        <input type="text" inputmode="numeric" maxlength="2" id="tw-h" class="tw-input tw-input-time" placeholder="HH">
-                        <span style="font-weight:bold;">:</span>
-                        <input type="text" inputmode="numeric" maxlength="2" id="tw-m" class="tw-input tw-input-time" placeholder="MM">
-                        <span style="font-weight:bold;">:</span>
-                        <input type="text" inputmode="numeric" maxlength="2" id="tw-s" class="tw-input tw-input-time" placeholder="SS">
-                        <span style="font-weight:bold;">.</span>
-                        <input type="text" inputmode="numeric" maxlength="3" id="tw-ms" class="tw-input tw-input-ms" placeholder="MS">
-                    </div>
-
-                    <div style="font-weight:bold; margin-top:12px; margin-bottom:4px; border-bottom: 1px dashed #b89160; padding-bottom:4px;">${t('troopsToSend')}</div>
-                    <div class="tw-unit-grid" id="tw-unit-inputs"></div>
-
-                    <div style="display:flex; gap:10px; margin-top:12px;">
-                        <button id="tw-add-btn" class="tw-btn" style="flex:2; font-size: 14px;">${t('addToPlanner')}</button>
-                        <button id="tw-clear-form-btn" class="tw-btn tw-btn-danger" title="${t('clearFormTitle')}" style="flex:1;">${t('clearForm')}</button>
+            <div class="tw-box" style="margin-bottom:0;">
+                <div class="tw-title-sm" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>📜 Ataques Planificados</span>
+                    <div>
+                        <button id="tw-export-bb-btn" class="tw-btn tw-btn-action">📋 Exportar BBCode</button>
+                        <button id="tw-clear-all-btn" style="background:none; border:none; color:#c0392b; cursor:pointer; font-size:12px; text-decoration:underline; margin-left:8px; font-weight:bold;">Borrar Todo</button>
                     </div>
                 </div>
+                <div id="tw-attack-list" style="max-height: 240px; overflow-y: auto; padding-right:5px;"></div>
+            </div>
 
-                <div class="tw-box" style="margin-bottom:0;">
-                    <div class="tw-title-sm" style="display:flex; justify-content:space-between; align-items:center;">
-                        <span>${t('plannedAttacks')}</span>
-                        <div>
-                            <button id="tw-export-bb-btn" class="tw-btn tw-btn-action">${t('exportBBCode')}</button>
-                            <button id="tw-clear-all-btn" style="background:none; border:none; color:#c0392b; cursor:pointer; font-size:12px; text-decoration:underline; margin-left:8px; font-weight:bold;">${t('deleteAll')}</button>
-                        </div>
-                    </div>
-                    <div id="tw-attack-list" style="max-height: 240px; overflow-y: auto; padding-right:5px;"></div>
-                </div>
-
-                <div id="tw-bbcode-panel" class="tw-box" style="display:none; background:#ebd2a9;">
-                    <div class="tw-title-sm">${t('generatedBBCode')}</div>
-                    <textarea id="tw-bbcode-output" style="width:100%; height:120px; font-size:12px; font-family:monospace; box-sizing:border-box; border-radius:5px; padding:8px; border:1px solid #8a4b10;"></textarea>
-                    <div style="display:flex; gap:8px; margin-top:8px;">
-                        <button id="tw-copy-bbcode-btn" class="tw-btn tw-btn-action" style="flex:1;">${t('copyBBCode')}</button>
-                        <button id="tw-close-bbcode-btn" class="tw-btn tw-btn-secondary" style="flex:1;">${t('closeBtn')}</button>
-                    </div>
-                </div>
-
-                <div class="tw-footer">
-                    <span>${t('by')} <strong>REDWALDA</strong> | <a href="${CHANGELOG_URL}" target="_blank" rel="noopener noreferrer">${t('changelog')}</a></span>
-                    <span>v${SCRIPT_VERSION} (05/08/2026) | <a href="${GITHUB_URL}" target="_blank" rel="noopener noreferrer">GitHub</a></span>
+            <div id="tw-bbcode-panel" class="tw-box" style="display:none; background:#ebd2a9;">
+                <div class="tw-title-sm">📋 BBCode Generado</div>
+                <textarea id="tw-bbcode-output" style="width:100%; height:120px; font-size:12px; font-family:monospace; box-sizing:border-box; border-radius:5px; padding:8px; border:1px solid #8a4b10;"></textarea>
+                <div style="display:flex; gap:8px; margin-top:8px;">
+                    <button id="tw-copy-bbcode-btn" class="tw-btn tw-btn-action" style="flex:1;">📋 Copiar BBCode</button>
+                    <button id="tw-close-bbcode-btn" class="tw-btn tw-btn-secondary" style="flex:1;">Cerrar</button>
                 </div>
             </div>
-        `;
 
-        const unitContainer = container.querySelector('#tw-unit-inputs');
-        unitContainer.innerHTML = '';
-        const unitsDict = TRANSLATIONS[currentLang].units;
-        Object.keys(BASE_UNIT_SPEEDS).forEach(unitKey => {
-            const div = document.createElement('div');
-            div.className = 'tw-unit-item';
-            div.innerHTML = `
-                <img src="https://dses.innogamescdn.com/asset/8b8e01d/graphic/unit/unit_${unitKey}.png" title="${unitsDict[unitKey]}" style="width:16px; height:16px;">
-                <input type="text" inputmode="numeric" maxlength="5" class="tw-input tw-unit-count" data-unit="${unitKey}" placeholder="0">
-            `;
-            unitContainer.appendChild(div);
-        });
-
-        setupEvents();
-        renderAttacks();
-    }
+            <div class="tw-footer">
+                <span>Hecho por <strong>REDWALDA</strong> | <a href="${CHANGELOG_URL}" target="_blank" rel="noopener noreferrer">Registro de cambios</a></span>
+                <span>v${SCRIPT_VERSION} (05/08/2026) | <a href="${GITHUB_URL}" target="_blank" rel="noopener noreferrer">GitHub</a></span>
+            </div>
+        </div>
+    `;
 
     document.body.appendChild(container);
 
-    // CONFIGURACIÓN DEL MUNDO
+    const unitContainer = document.getElementById('tw-unit-inputs');
+    Object.keys(BASE_UNIT_SPEEDS).forEach(unitKey => {
+        const div = document.createElement('div');
+        div.className = 'tw-unit-item';
+        div.innerHTML = `
+            <img src="https://dses.innogamescdn.com/asset/8b8e01d/graphic/unit/unit_${unitKey}.png" title="${UNIT_NAMES[unitKey]}" style="width:16px; height:16px;">
+            <input type="text" inputmode="numeric" maxlength="5" class="tw-input tw-unit-count" data-unit="${unitKey}" placeholder="0">
+        `;
+        unitContainer.appendChild(div);
+    });
+
+    // 4. CONFIGURACIÓN DEL MUNDO
     function fetchWorldConfig() {
         if (typeof $ !== 'undefined') {
             $.ajax({
@@ -607,27 +472,22 @@
                     const us = parseFloat($(xml).find('unit_speed').text());
                     if (!isNaN(ws) && !isNaN(us)) {
                         saveWorldSpeeds(ws, us);
-                        const wsEl = document.getElementById('tw-ws-val');
-                        const usEl = document.getElementById('tw-us-val');
-                        if (wsEl) wsEl.textContent = ws;
-                        if (usEl) usEl.textContent = us;
+                        document.getElementById('tw-ws-val').textContent = ws;
+                        document.getElementById('tw-us-val').textContent = us;
                     }
                 }
             });
         }
     }
 
-    const initSpeeds = getStoredWorldSpeeds();
-    if (initSpeeds.worldSpeed === 1 && initSpeeds.unitSpeed === 1) {
+    if (speeds.worldSpeed === 1 && speeds.unitSpeed === 1) {
         fetchWorldConfig();
     }
 
-    // EVENTOS Y LÓGICA
-    function setupEvents() {
-        // Editar velocidades
+    function setupSpeedEditEvents() {
         document.getElementById('tw-ws-val').addEventListener('click', () => {
             const current = getStoredWorldSpeeds();
-            const val = prompt(t('promptWorldSpeed'), current.worldSpeed);
+            const val = prompt('Introduce la Velocidad del Mundo:', current.worldSpeed);
             if (val !== null && !isNaN(parseFloat(val))) {
                 const newWs = parseFloat(val);
                 saveWorldSpeeds(newWs, current.unitSpeed);
@@ -637,236 +497,60 @@
 
         document.getElementById('tw-us-val').addEventListener('click', () => {
             const current = getStoredWorldSpeeds();
-            const val = prompt(t('promptUnitSpeed'), current.unitSpeed);
+            const val = prompt('Introduce la Velocidad de las Unidades:', current.unitSpeed);
             if (val !== null && !isNaN(parseFloat(val))) {
                 const newUs = parseFloat(val);
                 saveWorldSpeeds(current.worldSpeed, newUs);
                 document.getElementById('tw-us-val').textContent = newUs;
             }
         });
-
-        // Arrastre
-        const header = document.getElementById('tw-planner-header');
-        let isDragging = false, offsetX = 0, offsetY = 0;
-
-        header.addEventListener('mousedown', (e) => {
-            if (e.target.tagName === 'BUTTON') return;
-            isDragging = true;
-            offsetX = e.clientX - container.offsetLeft;
-            offsetY = e.clientY - container.offsetTop;
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            const newTop = `${e.clientY - offsetY}px`;
-            const newLeft = `${e.clientX - offsetX}px`;
-            container.style.top = newTop;
-            container.style.left = newLeft;
-            savePosition(newTop, newLeft);
-        });
-
-        document.addEventListener('mouseup', () => { isDragging = false; });
-
-        // Botón Idioma
-        document.getElementById('tw-btn-lang').addEventListener('click', () => {
-            currentLang = currentLang === 'es' ? 'en' : 'es';
-            saveLang(currentLang);
-            renderUI();
-        });
-
-        // Botón Minimizar
-        const toggleBtn = document.getElementById('tw-btn-toggle');
-        const content = document.getElementById('tw-planner-content');
-        toggleBtn.addEventListener('click', () => {
-            if (content.style.display === 'none') {
-                content.style.display = 'block';
-                toggleBtn.textContent = '_';
-            } else {
-                content.style.display = 'none';
-                toggleBtn.textContent = '+';
-            }
-        });
-
-        // Botón Cerrar
-        const closeBtn = document.getElementById('tw-btn-close');
-        closeBtn.addEventListener('click', () => {
-            if (window.twPlannerInterval) {
-                clearInterval(window.twPlannerInterval);
-                window.twPlannerInterval = null;
-            }
-            container.remove();
-        });
-
-        // Formulario
-        document.getElementById('tw-btn-current-village').addEventListener('click', () => {
-            if (typeof game_data !== 'undefined' && game_data.village) {
-                document.getElementById('tw-ox').value = game_data.village.x;
-                document.getElementById('tw-oy').value = game_data.village.y;
-            } else {
-                alert(t('alertCurrentVillageFail'));
-            }
-        });
-
-        document.getElementById('tw-clear-form-btn').addEventListener('click', () => {
-            document.getElementById('tw-ox').value = '';
-            document.getElementById('tw-oy').value = '';
-            document.getElementById('tw-tx').value = '';
-            document.getElementById('tw-ty').value = '';
-            document.getElementById('tw-h').value = '';
-            document.getElementById('tw-m').value = '';
-            document.getElementById('tw-s').value = '';
-            document.getElementById('tw-ms').value = '';
-            document.querySelectorAll('.tw-unit-count').forEach(i => i.value = '');
-        });
-
-        document.getElementById('tw-clear-all-btn').addEventListener('click', () => {
-            if (confirm(t('confirmDeleteAll'))) {
-                saveAttacks([]);
-                renderAttacks();
-            }
-        });
-
-        document.getElementById('tw-add-btn').addEventListener('click', async () => {
-            const ox = parseFloat(document.getElementById('tw-ox').value);
-            const oy = parseFloat(document.getElementById('tw-oy').value);
-            const tx = parseFloat(document.getElementById('tw-tx').value);
-            const ty = parseFloat(document.getElementById('tw-ty').value);
-
-            if (isNaN(ox) || isNaN(oy) || isNaN(tx) || isNaN(ty)) {
-                alert(t('alertCoords'));
-                return;
-            }
-
-            const dateVal = document.getElementById('tw-target-date').value;
-            const h = parseInt(document.getElementById('tw-h').value) || 0;
-            const m = parseInt(document.getElementById('tw-m').value) || 0;
-            const s = parseInt(document.getElementById('tw-s').value) || 0;
-            const ms = parseInt(document.getElementById('tw-ms').value) || 0;
-
-            if (!dateVal) {
-                alert(t('alertDate'));
-                return;
-            }
-
-            const targetDate = new Date(`${dateVal}T${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms).padStart(3,'0')}`);
-
-            const units = {};
-            document.querySelectorAll('.tw-unit-count').forEach(input => {
-                const count = parseInt(input.value) || 0;
-                if (count > 0) {
-                    units[input.getAttribute('data-unit')] = count;
-                }
-            });
-
-            const slowestUnit = getSlowestUnitKey(units);
-            if (!slowestUnit) {
-                alert(t('alertTroops'));
-                return;
-            }
-
-            const addBtn = document.getElementById('tw-add-btn');
-            addBtn.textContent = t('loadingWorldData');
-            addBtn.disabled = true;
-
-            const [originData, targetData] = await Promise.all([
-                fetchVillageData(ox, oy),
-                fetchVillageData(tx, ty)
-            ]);
-
-            addBtn.textContent = t('addToPlanner');
-            addBtn.disabled = false;
-
-            const dx = ox - tx;
-            const dy = oy - ty;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-
-            const currentSpeeds = getStoredWorldSpeeds();
-            const baseMinPerTile = BASE_UNIT_SPEEDS[slowestUnit];
-            const realMinPerTile = baseMinPerTile / (currentSpeeds.worldSpeed * currentSpeeds.unitSpeed);
-            
-            const totalDurationMs = Math.round(dist * realMinPerTile * 60) * 1000;
-            const launchDate = new Date(targetDate.getTime() - totalDurationMs);
-
-            const newAttack = {
-                ox, oy, tx, ty,
-                originId: originData.id,
-                originName: originData.name,
-                targetId: targetData.id,
-                targetName: targetData.name,
-                units,
-                dist: dist.toFixed(2),
-                durationStr: formatDuration(totalDurationMs),
-                targetDate: formatDate(targetDate),
-                launchDate: formatDate(launchDate)
-            };
-
-            const attacks = getStoredAttacks();
-            attacks.push(newAttack);
-            saveAttacks(attacks);
-            renderAttacks();
-        });
-
-        // BBCode Export
-        document.getElementById('tw-export-bb-btn').addEventListener('click', () => {
-            let attacks = getStoredAttacks();
-            if (attacks.length === 0) {
-                alert(t('alertNoAttacksExport'));
-                return;
-            }
-
-            attacks.sort((a, b) => parseLaunchMs(a.launchDate) - parseLaunchMs(b.launchDate));
-
-            let bb = `[b]${t('bbTitle')}[/b]\n`;
-            attacks.forEach((atk, index) => {
-                let uStr = [];
-                Object.keys(atk.units).forEach(u => {
-                    if (atk.units[u] > 0) uStr.push(`[unit]${u}[/unit] ${atk.units[u]}`);
-                });
-
-                const origLabel = atk.originName ? `${atk.originName} ` : '';
-                const targLabel = atk.targetName ? `${atk.targetName} ` : '';
-
-                bb += `\n[b]#${index + 1} | ${t('bbOrigin')}[/b] ${origLabel}[coord]${atk.ox}|${atk.oy}[/coord] ➔ [b]${t('bbTarget')}[/b] ${targLabel}[coord]${atk.tx}|${atk.ty}[/coord]\n`;
-                bb += `[b]${t('bbTroops')}[/b] ${uStr.join(' ') || t('unspecified')}\n`;
-                bb += `[b]${t('bbDuration')}[/b] ${atk.durationStr}\n`;
-                bb += `[b]${t('bbSend')}[/b] ${atk.launchDate}\n`;
-                bb += `[b]${t('bbArrival')}[/b] ${atk.targetDate}\n`;
-                bb += `--------------------------------------------------\n`;
-            });
-
-            document.getElementById('tw-bbcode-output').value = bb.trim();
-            document.getElementById('tw-bbcode-panel').style.display = 'block';
-        });
-
-        document.getElementById('tw-copy-bbcode-btn').addEventListener('click', () => {
-            const textarea = document.getElementById('tw-bbcode-output');
-            textarea.select();
-
-            const copyBtn = document.getElementById('tw-copy-bbcode-btn');
-            const originalText = copyBtn.textContent;
-
-            const setSuccess = () => {
-                copyBtn.textContent = t('copied');
-                setTimeout(() => { copyBtn.textContent = originalText; }, 2000);
-            };
-
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(textarea.value).then(setSuccess).catch(() => {
-                    document.execCommand('copy');
-                    setSuccess();
-                });
-            } else {
-                document.execCommand('copy');
-                setSuccess();
-            }
-        });
-
-        document.getElementById('tw-close-bbcode-btn').addEventListener('click', () => {
-            document.getElementById('tw-bbcode-panel').style.display = 'none';
-        });
     }
+    setupSpeedEditEvents();
 
-    // FUNCIONES AUXILIARES
+    // 5. EVENTOS ARRASTRE Y BOTONES
+    const header = document.getElementById('tw-planner-header');
+    let isDragging = false, offsetX = 0, offsetY = 0;
+
+    header.addEventListener('mousedown', (e) => {
+        if (e.target.tagName === 'BUTTON') return;
+        isDragging = true;
+        offsetX = e.clientX - container.offsetLeft;
+        offsetY = e.clientY - container.offsetTop;
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const newTop = `${e.clientY - offsetY}px`;
+        const newLeft = `${e.clientX - offsetX}px`;
+        container.style.top = newTop;
+        container.style.left = newLeft;
+        savePosition(newTop, newLeft);
+    });
+
+    document.addEventListener('mouseup', () => { isDragging = false; });
+
+    const toggleBtn = document.getElementById('tw-btn-toggle');
+    const content = document.getElementById('tw-planner-content');
+    toggleBtn.addEventListener('click', () => {
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            toggleBtn.textContent = '_';
+        } else {
+            content.style.display = 'none';
+            toggleBtn.textContent = '+';
+        }
+    });
+
+    const closeBtn = document.getElementById('tw-btn-close');
+    closeBtn.addEventListener('click', () => {
+        if (window.twPlannerInterval) {
+            clearInterval(window.twPlannerInterval);
+            window.twPlannerInterval = null;
+        }
+        container.remove();
+    });
+
+    // 6. CÁLCULOS Y FUNCIONES AUXILIARES
     function getSlowestUnitKey(unitsObj) {
         let slowestKey = null;
         let maxTime = -1;
@@ -924,7 +608,7 @@
         return url;
     }
 
-    // RENDERIZADO DE ATAQUES
+    // RENDERIZADO ESTÁTICO DE ATAQUES (Sólo al añadir, borrar o cargar)
     function renderAttacks() {
         const list = document.getElementById('tw-attack-list');
         if (!list) return;
@@ -932,7 +616,7 @@
         let attacks = getStoredAttacks();
 
         if (attacks.length === 0) {
-            list.innerHTML = `<div style="color:#777; text-align:center; padding:15px; font-style:italic;">${t('noAttacks')}</div>`;
+            list.innerHTML = '<div style="color:#777; text-align:center; padding:15px; font-style:italic;">No hay ataques planificados</div>';
             return;
         }
 
@@ -945,8 +629,6 @@
             currentY = parseInt(game_data.village.y);
         }
 
-        const unitsDict = TRANSLATIONS[currentLang].units;
-
         attacks.forEach((atk, index) => {
             const launchMs = parseLaunchMs(atk.launchDate);
             const diffMs = launchMs - now;
@@ -956,7 +638,7 @@
 
             let unitsSummary = [];
             Object.keys(atk.units).forEach(u => {
-                if (atk.units[u] > 0) unitsSummary.push(`${unitsDict[u] || u}: ${atk.units[u]}`);
+                if (atk.units[u] > 0) unitsSummary.push(`${UNIT_NAMES[u]}: ${atk.units[u]}`);
             });
 
             const rallyUrl = buildRallyUrl(atk);
@@ -967,14 +649,14 @@
                                   (parseInt(atk.ox) === currentX && parseInt(atk.oy) === currentY);
 
             const villageBadgeHtml = isSameVillage
-                ? `<span class="tw-village-badge tw-badge-ok">${t('inVillage')}</span>`
-                : `<span class="tw-village-badge tw-badge-warn">${t('notInVillage')}</span>`;
+                ? `<span class="tw-village-badge tw-badge-ok">✅ Estás en el pueblo</span>`
+                : `<span class="tw-village-badge tw-badge-warn">⚠️ No estás en el pueblo</span>`;
 
             let timerText = formatDuration(diffMs);
             let timerClass = 'tw-timer-ok';
 
             if (diffMs <= 0) {
-                timerText = t('overdue');
+                timerText = '⚠️ ATRASADO';
                 timerClass = 'tw-timer-expired';
             } else if (diffMs < 60000) {
                 timerClass = 'tw-timer-warn';
@@ -993,24 +675,24 @@
                     ${villageBadgeHtml}
                 </div>
                 <div style="font-size:11px; color:#444; margin-bottom: 6px; padding:4px; background:rgba(255,255,255,0.5); border-radius:3px;">
-                    <strong>${t('troopsLabel')}</strong> ${unitsSummary.join(', ') || t('unspecified')}
+                    <strong>Tropas:</strong> ${unitsSummary.join(', ') || 'Sin especificar'}
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:flex-end;">
                     <div style="line-height:1.5;">
-                        <div style="color:#2c3e50;">${t('duration')} <strong>${atk.durationStr}</strong></div>
+                        <div style="color:#2c3e50;">⏱️ Duración: <strong>${atk.durationStr}</strong></div>
                         <div style="color:#d35400;">
-                            ${t('send')} <strong>${atk.launchDate}</strong>
+                            🚀 Enviar: <strong>${atk.launchDate}</strong>
                             <button class="tw-copy-time-btn" data-time="${launchHHMMSS}" title="Copiar hora HH:MM:SS">📋</button>
                         </div>
                         <div style="color:#27ae60;">
-                            ${t('arrivalLabel')} <strong>${atk.targetDate}</strong>
+                            🎯 Llegada: <strong>${atk.targetDate}</strong>
                             <button class="tw-copy-time-btn" data-time="${targetHHMMSS}" title="Copiar hora HH:MM:SS">📋</button>
                         </div>
                     </div>
                     <div style="text-align:right;">
                         <div class="tw-timer ${timerClass}" data-launch-ms="${launchMs}">${timerText}</div>
                         <div style="margin-top:6px;">
-                            <a href="${rallyUrl}" target="_blank" class="tw-btn tw-btn-action" style="text-decoration:none; display:inline-block;">${t('goToRally')}</a>
+                            <a href="${rallyUrl}" target="_blank" class="tw-btn tw-btn-action" style="text-decoration:none; display:inline-block;">⚔️ Ir a la Plaza</a>
                         </div>
                     </div>
                 </div>
@@ -1058,7 +740,7 @@
         });
     }
 
-    // ACTUALIZACIÓN DE TEMPORIZADORES
+    // ACTUALIZACIÓN EXCLUSIVA DE TEXTO DEL TEMPORIZADOR (Sin modificar la estructura HTML)
     function updateTimersOnly() {
         const now = Date.now();
         const timerEls = document.querySelectorAll('#tw-attack-list .tw-timer');
@@ -1072,7 +754,7 @@
             let timerClass = 'tw-timer tw-timer-ok';
 
             if (diffMs <= 0) {
-                timerText = t('overdue');
+                timerText = '⚠️ ATRASADO';
                 timerClass = 'tw-timer tw-timer-expired';
             } else if (diffMs < 60000) {
                 timerClass = 'tw-timer tw-timer-warn';
@@ -1087,6 +769,7 @@
         });
     }
 
+    // REGISTRO ÚNICO DEL INTERVALO EN WINDOW
     window.twPlannerInterval = setInterval(() => {
         if (document.getElementById('tw-planner-window')) {
             updateTimersOnly();
@@ -1096,7 +779,177 @@
         }
     }, 1000);
 
-    // Inicializar DOM y datos
+    // 7. EVENTOS DE FORMULARIO
+    document.getElementById('tw-btn-current-village').addEventListener('click', () => {
+        if (typeof game_data !== 'undefined' && game_data.village) {
+            document.getElementById('tw-ox').value = game_data.village.x;
+            document.getElementById('tw-oy').value = game_data.village.y;
+        } else {
+            alert('No se pudieron leer las coordenadas del pueblo actual.');
+        }
+    });
+
+    document.getElementById('tw-clear-form-btn').addEventListener('click', () => {
+        document.getElementById('tw-ox').value = '';
+        document.getElementById('tw-oy').value = '';
+        document.getElementById('tw-tx').value = '';
+        document.getElementById('tw-ty').value = '';
+        document.getElementById('tw-h').value = '';
+        document.getElementById('tw-m').value = '';
+        document.getElementById('tw-s').value = '';
+        document.getElementById('tw-ms').value = '';
+        document.querySelectorAll('.tw-unit-count').forEach(i => i.value = '');
+    });
+
+    document.getElementById('tw-clear-all-btn').addEventListener('click', () => {
+        if (confirm('¿Seguro que quieres borrar todos los ataques del planificador?')) {
+            saveAttacks([]);
+            renderAttacks();
+        }
+    });
+
+    document.getElementById('tw-add-btn').addEventListener('click', async () => {
+        const ox = parseFloat(document.getElementById('tw-ox').value);
+        const oy = parseFloat(document.getElementById('tw-oy').value);
+        const tx = parseFloat(document.getElementById('tw-tx').value);
+        const ty = parseFloat(document.getElementById('tw-ty').value);
+
+        if (isNaN(ox) || isNaN(oy) || isNaN(tx) || isNaN(ty)) {
+            alert('Por favor, ingresa coordenadas válidas de Origen y Destino.');
+            return;
+        }
+
+        const dateVal = document.getElementById('tw-target-date').value;
+        const h = parseInt(document.getElementById('tw-h').value) || 0;
+        const m = parseInt(document.getElementById('tw-m').value) || 0;
+        const s = parseInt(document.getElementById('tw-s').value) || 0;
+        const ms = parseInt(document.getElementById('tw-ms').value) || 0;
+
+        if (!dateVal) {
+            alert('Por favor, selecciona una fecha válida.');
+            return;
+        }
+
+        const targetDate = new Date(`${dateVal}T${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${String(ms).padStart(3,'0')}`);
+
+        const units = {};
+        document.querySelectorAll('.tw-unit-count').forEach(input => {
+            const count = parseInt(input.value) || 0;
+            if (count > 0) {
+                units[input.getAttribute('data-unit')] = count;
+            }
+        });
+
+        const slowestUnit = getSlowestUnitKey(units);
+        if (!slowestUnit) {
+            alert('Debes indicar la cantidad de al menos una tropa para el ataque.');
+            return;
+        }
+
+        const addBtn = document.getElementById('tw-add-btn');
+        addBtn.textContent = '⏳ Cargando datos del mundo...';
+        addBtn.disabled = true;
+
+        const [originData, targetData] = await Promise.all([
+            fetchVillageData(ox, oy),
+            fetchVillageData(tx, ty)
+        ]);
+
+        addBtn.textContent = '➕ Añadir al Planificador';
+        addBtn.disabled = false;
+
+        const dx = ox - tx;
+        const dy = oy - ty;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        const currentSpeeds = getStoredWorldSpeeds();
+        const baseMinPerTile = BASE_UNIT_SPEEDS[slowestUnit];
+        const realMinPerTile = baseMinPerTile / (currentSpeeds.worldSpeed * currentSpeeds.unitSpeed);
+        
+        const totalDurationMs = Math.round(dist * realMinPerTile * 60) * 1000;
+        const launchDate = new Date(targetDate.getTime() - totalDurationMs);
+
+        const newAttack = {
+            ox, oy, tx, ty,
+            originId: originData.id,
+            originName: originData.name,
+            targetId: targetData.id,
+            targetName: targetData.name,
+            units,
+            dist: dist.toFixed(2),
+            durationStr: formatDuration(totalDurationMs),
+            targetDate: formatDate(targetDate),
+            launchDate: formatDate(launchDate)
+        };
+
+        const attacks = getStoredAttacks();
+        attacks.push(newAttack);
+        saveAttacks(attacks);
+        renderAttacks();
+    });
+
+    // EXPORTAR BBCODE
+    document.getElementById('tw-export-bb-btn').addEventListener('click', () => {
+        let attacks = getStoredAttacks();
+        if (attacks.length === 0) {
+            alert('No hay ataques para exportar.');
+            return;
+        }
+
+        attacks.sort((a, b) => parseLaunchMs(a.launchDate) - parseLaunchMs(b.launchDate));
+
+        let bb = `[b]🛡️ PLANIFICACIÓN DE ATAQUES[/b]\n`;
+        attacks.forEach((atk, index) => {
+            let uStr = [];
+            Object.keys(atk.units).forEach(u => {
+                if (atk.units[u] > 0) uStr.push(`[unit]${u}[/unit] ${atk.units[u]}`);
+            });
+
+            const origLabel = atk.originName ? `${atk.originName} ` : '';
+            const targLabel = atk.targetName ? `${atk.targetName} ` : '';
+
+            bb += `\n[b]#${index + 1} | Origen:[/b] ${origLabel}[coord]${atk.ox}|${atk.oy}[/coord] ➔ [b]Destino:[/b] ${targLabel}[coord]${atk.tx}|${atk.ty}[/coord]\n`;
+            bb += `[b]Tropas:[/b] ${uStr.join(' ') || 'Sin especificar'}\n`;
+            bb += `[b]Duración:[/b] ${atk.durationStr}\n`;
+            bb += `[b]🚀 Enviar:[/b] ${atk.launchDate}\n`;
+            bb += `[b]🎯 Llegada:[/b] ${atk.targetDate}\n`;
+            bb += `--------------------------------------------------\n`;
+        });
+
+        document.getElementById('tw-bbcode-output').value = bb.trim();
+        document.getElementById('tw-bbcode-panel').style.display = 'block';
+    });
+
+    document.getElementById('tw-copy-bbcode-btn').addEventListener('click', () => {
+        const textarea = document.getElementById('tw-bbcode-output');
+        textarea.select();
+
+        const copyBtn = document.getElementById('tw-copy-bbcode-btn');
+        const originalText = copyBtn.textContent;
+
+        const setSuccess = () => {
+            copyBtn.textContent = '✅ ¡Copiado!';
+            setTimeout(() => { copyBtn.textContent = originalText; }, 2000);
+        };
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(textarea.value)
+                .then(setSuccess)
+                .catch(() => {
+                    document.execCommand('copy');
+                    setSuccess();
+                });
+        } else {
+            document.execCommand('copy');
+            setSuccess();
+        }
+    });
+
+    document.getElementById('tw-close-bbcode-btn').addEventListener('click', () => {
+        document.getElementById('tw-bbcode-panel').style.display = 'none';
+    });
+
+    // Precargar BD y primer renderizado
     loadVillageDatabase();
-    renderUI();
+    renderAttacks();
 })();
