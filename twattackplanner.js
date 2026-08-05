@@ -1,15 +1,18 @@
 (function() {
     'use strict';
 
-    const SCRIPT_VERSION = "4.4";
+    const SCRIPT_VERSION = "4.5";
     const GITHUB_URL = "https://github.com/samudev4";
 
-    if (document.getElementById('tw-planner-window')) {
-        const content = document.getElementById('tw-planner-content');
-        if (content.style.display === 'none') {
-            content.style.display = 'block';
-        }
-        return;
+    // 0. LIMPIEZA DE INSTANCIAS PREVIAS (Evita duplicados en memoria)
+    if (window.twPlannerInterval) {
+        clearInterval(window.twPlannerInterval);
+        window.twPlannerInterval = null;
+    }
+
+    const existingWindow = document.getElementById('tw-planner-window');
+    if (existingWindow) {
+        existingWindow.remove();
     }
 
     // 1. CONFIGURACIÓN DE UNIDADES Y VELOCIDADES BASE
@@ -106,13 +109,11 @@
         const targetY = parseInt(y);
         const key = `${targetX}|${targetY}`;
 
-        // 1. Consultar base de datos del mundo
         const db = await loadVillageDatabase();
         if (db && db.has(key)) {
             return db.get(key);
         }
 
-        // 2. Fallback a TWMap
         if (typeof TWMap !== 'undefined' && TWMap.villages) {
             const mapKey = targetX * 1000 + targetY;
             if (TWMap.villages[mapKey]) {
@@ -136,6 +137,7 @@
 
     // 2. ESTILOS CSS
     const style = document.createElement('style');
+    style.id = 'tw-planner-styles';
     style.innerHTML = `
         #tw-planner-window {
             position: fixed;
@@ -289,9 +291,7 @@
             margin-bottom: 10px;
             position: relative;
             box-shadow: 0 2px 5px rgba(0,0,0,0.08);
-            transition: transform 0.2s;
         }
-        .tw-card:hover { transform: translateX(2px); }
         .tw-card-del {
             position: absolute;
             top: 8px;
@@ -340,6 +340,9 @@
         .tw-timer-expired { color: #721c24; background: #f8d7da; border-color: #f5c6cb; }
         .tw-speed-edit { cursor: pointer; text-decoration: underline; font-weight: bold; color: #1a5276; }
     `;
+
+    const oldStyle = document.getElementById('tw-planner-styles');
+    if (oldStyle) oldStyle.remove();
     document.head.appendChild(style);
 
     // 3. ESTRUCTURA INTERFAZ
@@ -368,7 +371,6 @@
         </div>
 
         <div id="tw-planner-content" class="tw-planner-body">
-            <!-- INFO DEL MUNDO -->
             <div style="font-size: 12px; color: #572d00; margin-bottom: 10px; display:flex; justify-content:space-between; background:rgba(255,255,255,0.6); padding:6px 10px; border-radius:5px; border: 1px solid #d4b58a;">
                 <span><strong>Mundo:</strong> ${currentWorld}</span>
                 <span>
@@ -377,7 +379,6 @@
                 </span>
             </div>
 
-            <!-- FORMULARIO DE ATAQUE -->
             <div id="tw-form-panel" class="tw-box">
                 <div class="tw-title-sm">🎯 Configurar Nuevo Ataque</div>
 
@@ -408,7 +409,6 @@
                     <input type="text" inputmode="numeric" maxlength="3" id="tw-ms" class="tw-input tw-input-ms" placeholder="MS">
                 </div>
 
-                <!-- SELECCIÓN DE TROPAS -->
                 <div style="font-weight:bold; margin-top:12px; margin-bottom:4px; border-bottom: 1px dashed #b89160; padding-bottom:4px;">Tropas a enviar:</div>
                 <div class="tw-unit-grid" id="tw-unit-inputs"></div>
 
@@ -418,7 +418,6 @@
                 </div>
             </div>
 
-            <!-- LISTA DE ATAQUES -->
             <div class="tw-box" style="margin-bottom:0;">
                 <div class="tw-title-sm" style="display:flex; justify-content:space-between; align-items:center;">
                     <span>📜 Plan de Ataques</span>
@@ -430,7 +429,6 @@
                 <div id="tw-attack-list" style="max-height: 240px; overflow-y: auto; padding-right:5px;"></div>
             </div>
 
-            <!-- MODAL BBCODE -->
             <div id="tw-bbcode-panel" class="tw-box" style="display:none; background:#ebd2a9;">
                 <div class="tw-title-sm">📋 BBCode Generado</div>
                 <textarea id="tw-bbcode-output" style="width:100%; height:120px; font-size:12px; font-family:monospace; box-sizing:border-box; border-radius:5px; padding:8px; border:1px solid #8a4b10;"></textarea>
@@ -440,7 +438,6 @@
                 </div>
             </div>
 
-            <!-- PIE DE PÁGINA -->
             <div class="tw-footer">
                 <span>hecho por <strong>samudev4</strong></span>
                 <span>v${SCRIPT_VERSION} | <a href="${GITHUB_URL}" target="_blank" rel="noopener noreferrer">GitHub</a></span>
@@ -450,7 +447,6 @@
 
     document.body.appendChild(container);
 
-    // Inputs para unidades
     const unitContainer = document.getElementById('tw-unit-inputs');
     Object.keys(BASE_UNIT_SPEEDS).forEach(unitKey => {
         const div = document.createElement('div');
@@ -462,7 +458,7 @@
         unitContainer.appendChild(div);
     });
 
-    // 4. PETICIÓN AUTOMÁTICA DE CONFIGURACIÓN DEL MUNDO
+    // 4. CONFIGURACIÓN DEL MUNDO
     function fetchWorldConfig() {
         if (typeof $ !== 'undefined') {
             $.ajax({
@@ -509,7 +505,7 @@
     }
     setupSpeedEditEvents();
 
-    // 5. LÓGICA ARRASTRE, MINIMIZAR Y CERRAR
+    // 5. EVENTOS ARRASTRE Y BOTONES
     const header = document.getElementById('tw-planner-header');
     let isDragging = false, offsetX = 0, offsetY = 0;
 
@@ -544,7 +540,13 @@
     });
 
     const closeBtn = document.getElementById('tw-btn-close');
-    closeBtn.addEventListener('click', () => { container.remove(); });
+    closeBtn.addEventListener('click', () => {
+        if (window.twPlannerInterval) {
+            clearInterval(window.twPlannerInterval);
+            window.twPlannerInterval = null;
+        }
+        container.remove();
+    });
 
     // 6. CÁLCULOS Y FUNCIONES AUXILIARES
     function getSlowestUnitKey(unitsObj) {
@@ -604,6 +606,7 @@
         return url;
     }
 
+    // RENDERIZADO ESTÁTICO DE ATAQUES (Sólo al añadir, borrar o cargar)
     function renderAttacks() {
         const list = document.getElementById('tw-attack-list');
         if (!list) return;
@@ -618,9 +621,7 @@
         attacks.sort((a, b) => parseLaunchMs(a.launchDate) - parseLaunchMs(b.launchDate));
 
         const now = Date.now();
-
-        let currentX = null;
-        let currentY = null;
+        let currentX = null, currentY = null;
         if (typeof game_data !== 'undefined' && game_data.village) {
             currentX = parseInt(game_data.village.x);
             currentY = parseInt(game_data.village.y);
@@ -665,13 +666,10 @@
             const originText = atk.originName ? `${atk.originName} (${atk.ox}|${atk.oy})` : `${atk.ox}|${atk.oy}`;
             const targetText = atk.targetName ? `${atk.targetName} (${atk.tx}|${atk.ty})` : `${atk.tx}|${atk.ty}`;
 
-            const originLink = `<a href="${originUrl}" target="_blank" class="tw-village-link" title="Ver info del pueblo">${originText}</a>`;
-            const targetLink = `<a href="${targetUrl}" target="_blank" class="tw-village-link" title="Ver info del pueblo">${targetText}</a>`;
-
             card.innerHTML = `
                 <button class="tw-card-del" data-index="${index}" title="Eliminar Ataque">×</button>
                 <div style="font-weight:normal; color:#603000; font-size:13px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; padding-right:25px;">
-                    <div>📍 ${originLink} ➔ 🎯 ${targetLink}</div>
+                    <div>📍 <a href="${originUrl}" target="_blank" class="tw-village-link">${originText}</a> ➔ 🎯 <a href="${targetUrl}" target="_blank" class="tw-village-link">${targetText}</a></div>
                     ${villageBadgeHtml}
                 </div>
                 <div style="font-size:11px; color:#444; margin-bottom: 6px; padding:4px; background:rgba(255,255,255,0.5); border-radius:3px;">
@@ -709,7 +707,6 @@
                     e.preventDefault();
                     const timeStr = btn.getAttribute('data-time');
                     const orig = btn.textContent;
-
                     const setOk = () => {
                         btn.textContent = '✅';
                         setTimeout(() => { btn.textContent = orig; }, 1200);
@@ -741,7 +738,7 @@
         });
     }
 
-    // ACTUALIZA ÚNICAMENTE EL TEMPORIZADOR SINO DESTRUYE EL DOM
+    // ACTUALIZACIÓN EXCLUSIVA DE TEXTO DEL TEMPORIZADOR (Sin modificar la estructura HTML)
     function updateTimersOnly() {
         const now = Date.now();
         const timerEls = document.querySelectorAll('#tw-attack-list .tw-timer');
@@ -770,9 +767,13 @@
         });
     }
 
-    setInterval(() => {
+    // REGISTRO ÚNICO DEL INTERVALO EN WINDOW
+    window.twPlannerInterval = setInterval(() => {
         if (document.getElementById('tw-planner-window')) {
             updateTimersOnly();
+        } else {
+            clearInterval(window.twPlannerInterval);
+            window.twPlannerInterval = null;
         }
     }, 1000);
 
@@ -885,7 +886,7 @@
         renderAttacks();
     });
 
-    // EXPORTAR BBCODE COMPATIBLE CON GUERRAS TRIBALES
+    // EXPORTAR BBCODE
     document.getElementById('tw-export-bb-btn').addEventListener('click', () => {
         let attacks = getStoredAttacks();
         if (attacks.length === 0) {
@@ -946,9 +947,7 @@
         document.getElementById('tw-bbcode-panel').style.display = 'none';
     });
 
-    // Precargar BD en segundo plano
+    // Precargar BD y primer renderizado
     loadVillageDatabase();
-
-    // Inicializar
     renderAttacks();
 })();
