@@ -2,7 +2,6 @@
 
 ![Version](https://img.shields.io/badge/version-4.5-blue.svg)
 ![Languages](https://img.shields.io/badge/languages-ES-green.svg)
-![Platform](https://img.shields.io/badge/platform-Tampermonkey%20%7C%20Violentmonkey-orange.svg)
 ![License](https://img.shields.io/badge/license-MIT-brightgreen.svg)
 
 Un **userscript avanzado e intuitivo** diseñado para optimizar, coordinar y gestionar la planificación de ataques en **Guerras Tribales (Tribal Wars)** directamente desde el navegador.
@@ -23,11 +22,15 @@ Un **userscript avanzado e intuitivo** diseñado para optimizar, coordinar y ges
 
 ## 🚀 Instalación
 
-1. Instala un gestor de userscripts en tu navegador:
-   * [Tampermonkey](https://www.tampermonkey.net/) *(Recomendado)*
-   * [Violentmonkey](https://violentmonkey.github.io/)
-2. Crea un nuevo script en tu gestor y pega el código de [`tw_attack_planner.js`](./tw_attack_planner.js).
-3. Guarda el script y accede a tu cuenta de **Guerras Tribales**.
+Añadir el script a la barra de acceso rápido de tu cuenta de Guerras Tribales es muy sencillo:
+
+1. Entra en el juego y ve a **Ajustes** > **Barra de acceso rápido**.
+2. Haz clic en **Añadir nueva entrada**.
+3. Configura los campos del formulario:
+   * **Nombre del enlace:** `Planificador de Ataques` (o el nombre que prefieras).
+   * **URL de la imagen:** *(Opcional)* Enlace a un icono si deseas personalizarlo.
+   * **URL del objetivo:** Pega el contenido del archivo [`planificador_v45.js`](./planificador_v45.js) precedido de `javascript:`.
+4. Guarda los cambios. El botón estará listo para usarse en tu barra superior en cualquier pantalla del juego.
 
 ---
 
