@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    const SCRIPT_VERSION = "3.9";
+    const SCRIPT_VERSION = "4.0";
     const GITHUB_URL = "https://github.com/samudev4";
 
     if (document.getElementById('tw-planner-window')) {
@@ -65,24 +65,55 @@
         localStorage.setItem('tw_planner_pos', JSON.stringify({ top, left }));
     }
 
-    // BÚSQUEDA DEL NOMBRE DEL PUEBLO VÍA AJAX
+    // BÚSQUEDA DEL NOMBRE DEL PUEBLO VÍA AJAX / TW MAP / PLAZA
     async function fetchVillageName(x, y) {
-        if (typeof game_data !== 'undefined' && game_data.village && parseInt(game_data.village.x) === parseInt(x) && parseInt(game_data.village.y) === parseInt(y)) {
+        const targetX = parseInt(x);
+        const targetY = parseInt(y);
+
+        // 1. Pueblo actual
+        if (typeof game_data !== 'undefined' && game_data.village && parseInt(game_data.village.x) === targetX && parseInt(game_data.village.y) === targetY) {
             return game_data.village.name;
         }
+
+        // 2. Caché de mapa (si está cargado TWMap)
+        if (typeof TWMap !== 'undefined' && TWMap.villages) {
+            const key = targetX * 1000 + targetY;
+            if (TWMap.villages[key] && TWMap.villages[key].name) {
+                return TWMap.villages[key].name;
+            }
+        }
+
+        const villageId = (typeof game_data !== 'undefined' && game_data.village) ? game_data.village.id : '';
+
+        // 3. Consulta vía info_village
         try {
-            const villageId = (typeof game_data !== 'undefined' && game_data.village) ? game_data.village.id : '';
-            const html = await $.get(`/game.php?village=${villageId}&screen=info_village&x=${x}&y=${y}`);
+            const html = await $.get(`/game.php?village=${villageId}&screen=info_village&x=${targetX}&y=${targetY}`);
             const doc = new DOMParser().parseFromString(html, 'text/html');
-            const titleEl = doc.querySelector('#content_value h2') || doc.querySelector('#content_value h3') || doc.querySelector('h2');
+            const titleEl = doc.querySelector('#content_value h2') || doc.querySelector('#content_value h3') || doc.querySelector('.village_anchor') || doc.querySelector('h2');
             if (titleEl) {
                 let rawName = titleEl.textContent.trim();
-                return rawName.replace(/\s*\(\d+\|\d+\)\s*K\d+/i, '').trim() || `Pueblo (${x}|${y})`;
+                let cleaned = rawName.replace(/\s*\(\d+\|\d+\)\s*[KC]\d+/gi, '').trim();
+                if (cleaned) return cleaned;
             }
         } catch (e) {
-            console.error("Error obteniendo nombre del pueblo:", e);
+            console.error("Error obteniendo nombre vía info_village:", e);
         }
-        return `Pueblo (${x}|${y})`;
+
+        // 4. Consulta alternativa vía plaza de armas
+        try {
+            const html = await $.get(`/game.php?village=${villageId}&screen=place&x=${targetX}&y=${targetY}`);
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const linkEl = doc.querySelector('a[href*="screen=info_village"]');
+            if (linkEl) {
+                let rawName = linkEl.textContent.trim();
+                let cleaned = rawName.replace(/\s*\(\d+\|\d+\)\s*[KC]\d+/gi, '').trim();
+                if (cleaned) return cleaned;
+            }
+        } catch (e) {
+            console.error("Error obteniendo nombre vía plaza:", e);
+        }
+
+        return `Pueblo (${targetX}|${targetY})`;
     }
 
     // 2. ESTILOS CSS - INTERFAZ MEJORADA
@@ -516,6 +547,14 @@
         return parts[1].split('.')[0];
     }
 
+    function parseLaunchMs(dateStr) {
+        if (!dateStr) return 0;
+        const [datePart, timePart] = dateStr.split(' ');
+        if (!datePart || !timePart) return 0;
+        const [d, m, y] = datePart.split('/');
+        return new Date(`${y}-${m}-${d}T${timePart}`).getTime();
+    }
+
     function formatDuration(ms) {
         if (ms <= 0) return "00:00:00";
         const sec = Math.round(ms / 1000);
@@ -541,12 +580,15 @@
         const list = document.getElementById('tw-attack-list');
         if (!list) return;
         list.innerHTML = '';
-        const attacks = getStoredAttacks();
+        let attacks = getStoredAttacks();
 
         if (attacks.length === 0) {
             list.innerHTML = '<div style="color:#777; text-align:center; padding:15px; font-style:italic;">No hay ataques planificados</div>';
             return;
         }
+
+        // ORDENAR ATAQUES DE MENOR A MAYOR TIEMPO RESTANTE DE ENVÍO
+        attacks.sort((a, b) => parseLaunchMs(a.launchDate) - parseLaunchMs(b.launchDate));
 
         const now = Date.now();
 
@@ -558,9 +600,7 @@
         }
 
         attacks.forEach((atk, index) => {
-            const [datePart, timePart] = atk.launchDate.split(' ');
-            const [d, m, y] = datePart.split('/');
-            const launchMs = new Date(`${y}-${m}-${d}T${timePart}`).getTime();
+            const launchMs = parseLaunchMs(atk.launchDate);
             const diffMs = launchMs - now;
 
             const card = document.createElement('div');
@@ -786,11 +826,13 @@
 
     // EXPORTAR BBCODE COMPATIBLE CON GUERRAS TRIBALES
     document.getElementById('tw-export-bb-btn').addEventListener('click', () => {
-        const attacks = getStoredAttacks();
+        let attacks = getStoredAttacks();
         if (attacks.length === 0) {
             alert('No hay ataques para exportar.');
             return;
         }
+
+        attacks.sort((a, b) => parseLaunchMs(a.launchDate) - parseLaunchMs(b.launchDate));
 
         let bb = `[b]🛡️ PLANIFICACIÓN DE ATAQUES[/b]\n`;
         attacks.forEach((atk, index) => {
