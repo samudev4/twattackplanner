@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    const SCRIPT_VERSION = "3.8";
+    const SCRIPT_VERSION = "3.9";
     const GITHUB_URL = "https://github.com/samudev4";
 
     if (document.getElementById('tw-planner-window')) {
@@ -25,7 +25,7 @@
         "ram": "Ariete", "catapult": "Catapulta", "knight": "Paladín", "snob": "Noble"
     };
 
-    // LECTURA/ALMACENAMIENTO DE VELOCIDADES
+    // LECTURA/ALMACENAMIENTO DE VELOCIDADES Y ATAQUES
     function getStoredWorldSpeeds() {
         const saved = localStorage.getItem('tw_planner_world_speeds');
         if (saved) return JSON.parse(saved);
@@ -65,12 +65,32 @@
         localStorage.setItem('tw_planner_pos', JSON.stringify({ top, left }));
     }
 
+    // BÚSQUEDA DEL NOMBRE DEL PUEBLO VÍA AJAX
+    async function fetchVillageName(x, y) {
+        if (typeof game_data !== 'undefined' && game_data.village && parseInt(game_data.village.x) === parseInt(x) && parseInt(game_data.village.y) === parseInt(y)) {
+            return game_data.village.name;
+        }
+        try {
+            const villageId = (typeof game_data !== 'undefined' && game_data.village) ? game_data.village.id : '';
+            const html = await $.get(`/game.php?village=${villageId}&screen=info_village&x=${x}&y=${y}`);
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const titleEl = doc.querySelector('#content_value h2') || doc.querySelector('#content_value h3') || doc.querySelector('h2');
+            if (titleEl) {
+                let rawName = titleEl.textContent.trim();
+                return rawName.replace(/\s*\(\d+\|\d+\)\s*K\d+/i, '').trim() || `Pueblo (${x}|${y})`;
+            }
+        } catch (e) {
+            console.error("Error obteniendo nombre del pueblo:", e);
+        }
+        return `Pueblo (${x}|${y})`;
+    }
+
     // 2. ESTILOS CSS - INTERFAZ MEJORADA
     const style = document.createElement('style');
     style.innerHTML = `
         #tw-planner-window {
             position: fixed;
-            width: 560px;
+            width: 580px;
             background: #e1c38a url('https://dses.innogamescdn.com/asset/8b8e01d/graphic/index/main_bg.jpg') repeat;
             border: 3px solid #603000;
             border-radius: 10px;
@@ -130,10 +150,7 @@
             box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
             transition: border-color 0.2s;
         }
-        .tw-input:focus {
-            border-color: #3d6919;
-            outline: none;
-        }
+        .tw-input:focus { border-color: #3d6919; outline: none; }
         .tw-input-coord { width: 55px; text-align: center; }
         .tw-input-time { width: 40px; text-align: center; }
         .tw-input-ms { width: 48px; text-align: center; }
@@ -156,10 +173,6 @@
             background: linear-gradient(180deg, #7cb349 0%, #487c1e 100%);
             transform: translateY(-1px);
             box-shadow: 0 3px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.4);
-        }
-        .tw-btn:active {
-            transform: translateY(1px);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
         }
         .tw-btn-danger { background: linear-gradient(180deg, #d35400 0%, #a04000 100%); border-color: #78281f; }
         .tw-btn-danger:hover { background: linear-gradient(180deg, #e59866 0%, #ba4a00 100%); }
@@ -185,19 +198,11 @@
             font-weight: bold;
             padding: 2px 7px;
             border-radius: 4px;
-            margin-right: 25px;
-            display: inline-block;
+            margin-left: 8px;
+            white-space: nowrap;
         }
-        .tw-badge-ok {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .tw-badge-warn {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
+        .tw-badge-ok { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .tw-badge-warn { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
 
         .tw-unit-grid {
             display: grid;
@@ -213,7 +218,6 @@
             padding: 4px 6px;
             border: 1px solid #b89160;
             border-radius: 5px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
         .tw-unit-item input { width: 100%; font-size: 13px; padding: 4px; text-align: center; }
 
@@ -259,7 +263,7 @@
             font-size: 12px;
             color: #572d00;
         }
-        .tw-footer a { color: #8a4b10; text-decoration: none; font-weight: bold; transition: color 0.2s; }
+        .tw-footer a { color: #8a4b10; text-decoration: none; font-weight: bold; }
         .tw-footer a:hover { color: #d35400; }
         
         .tw-timer {
@@ -271,13 +275,11 @@
             border: 1px solid #bbb;
             border-radius: 4px;
             display: inline-block;
-            box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
         }
         .tw-timer-warn { color: #c0392b; background: #fadbd8; border-color:#e6b0aa; }
         .tw-timer-ok { color: #27ae60; }
         .tw-timer-expired { color: #721c24; background: #f8d7da; border-color: #f5c6cb; }
         .tw-speed-edit { cursor: pointer; text-decoration: underline; font-weight: bold; color: #1a5276; }
-        .tw-speed-edit:hover { color: #2980b9; }
     `;
     document.head.appendChild(style);
 
@@ -311,21 +313,21 @@
             <div style="font-size: 12px; color: #572d00; margin-bottom: 10px; display:flex; justify-content:space-between; background:rgba(255,255,255,0.6); padding:6px 10px; border-radius:5px; border: 1px solid #d4b58a;">
                 <span><strong>Mundo:</strong> ${currentWorld}</span>
                 <span>
-                    <strong>Vel. Mundo:</strong> <span id="tw-ws-val" class="tw-speed-edit" title="Cambiar">${speeds.worldSpeed}</span> | 
-                    <strong>Unidades:</strong> <span id="tw-us-val" class="tw-speed-edit" title="Cambiar">${speeds.unitSpeed}</span>
+                    <strong>Vel. Mundo:</strong> <span id="tw-ws-val" class="tw-speed-edit">${speeds.worldSpeed}</span> | 
+                    <strong>Unidades:</strong> <span id="tw-us-val" class="tw-speed-edit">${speeds.unitSpeed}</span>
                 </span>
             </div>
 
             <!-- FORMULARIO DE ATAQUE -->
             <div id="tw-form-panel" class="tw-box">
-                <div class="tw-title-sm">🎯 Planificar Nuevo Ataque</div>
+                <div class="tw-title-sm">🎯 Configurar Nuevo Ataque</div>
 
                 <div class="tw-row">
                     <span style="width:65px; font-weight:bold;">Origen:</span>
                     <input type="text" inputmode="numeric" maxlength="3" id="tw-ox" class="tw-input tw-input-coord" placeholder="XXX">
                     <span style="font-weight:bold; color:#8a4b10;">|</span>
                     <input type="text" inputmode="numeric" maxlength="3" id="tw-oy" class="tw-input tw-input-coord" placeholder="YYY">
-                    <button id="tw-btn-current-village" class="tw-btn tw-btn-secondary" style="margin-left:auto;">📍 Usar pueblo actual</button>
+                    <button id="tw-btn-current-village" class="tw-btn tw-btn-secondary" style="margin-left:auto;">📍 Usar actual</button>
                 </div>
 
                 <div class="tw-row">
@@ -360,13 +362,13 @@
             <!-- LISTA DE ATAQUES -->
             <div class="tw-box" style="margin-bottom:0;">
                 <div class="tw-title-sm" style="display:flex; justify-content:space-between; align-items:center;">
-                    <span>📜 Ataques Planificados</span>
+                    <span>📜 Plan de Ataques</span>
                     <div>
                         <button id="tw-export-bb-btn" class="tw-btn tw-btn-action">📋 Exportar BBCode</button>
                         <button id="tw-clear-all-btn" style="background:none; border:none; color:#c0392b; cursor:pointer; font-size:12px; text-decoration:underline; margin-left:8px; font-weight:bold;">Borrar Todo</button>
                     </div>
                 </div>
-                <div id="tw-attack-list" style="max-height: 220px; overflow-y: auto; padding-right:5px;"></div>
+                <div id="tw-attack-list" style="max-height: 240px; overflow-y: auto; padding-right:5px;"></div>
             </div>
 
             <!-- MODAL BBCODE -->
@@ -381,7 +383,7 @@
 
             <!-- PIE DE PÁGINA -->
             <div class="tw-footer">
-                <span>Hecho por <strong>REDWALDA</strong></span>
+                <span>hecho por <strong>samudev4</strong></span>
                 <span>v${SCRIPT_VERSION} | <a href="${GITHUB_URL}" target="_blank" rel="noopener noreferrer">GitHub</a></span>
             </div>
         </div>
@@ -483,9 +485,7 @@
     });
 
     const closeBtn = document.getElementById('tw-btn-close');
-    closeBtn.addEventListener('click', () => {
-        container.remove();
-    });
+    closeBtn.addEventListener('click', () => { container.remove(); });
 
     // 6. CÁLCULOS Y FUNCIONES AUXILIARES
     function getSlowestUnitKey(unitsObj) {
@@ -550,7 +550,6 @@
 
         const now = Date.now();
 
-        // Obtener coordenadas del pueblo actual
         let currentX = null;
         let currentY = null;
         if (typeof game_data !== 'undefined' && game_data.village) {
@@ -576,7 +575,6 @@
             const launchHHMMSS = getTimeHHMMSS(atk.launchDate);
             const targetHHMMSS = getTimeHHMMSS(atk.targetDate);
 
-            // Comprobar si el usuario se encuentra actualmente en el pueblo de origen
             const isSameVillage = (currentX !== null && currentY !== null) && 
                                   (parseInt(atk.ox) === currentX && parseInt(atk.oy) === currentY);
 
@@ -584,7 +582,6 @@
                 ? `<span class="tw-village-badge tw-badge-ok">✅ Estás en el pueblo</span>`
                 : `<span class="tw-village-badge tw-badge-warn">⚠️ No estás en el pueblo</span>`;
 
-            // Determinar texto y clase según si ya venció el ataque
             let timerText = formatDuration(diffMs);
             let timerClass = 'tw-timer-ok';
 
@@ -595,10 +592,13 @@
                 timerClass = 'tw-timer-warn';
             }
 
+            const originDisplayName = atk.originName ? `<strong>${atk.originName}</strong> (${atk.ox}|${atk.oy})` : `${atk.ox}|${atk.oy}`;
+            const targetDisplayName = atk.targetName ? `<strong>${atk.targetName}</strong> (${atk.tx}|${atk.ty})` : `${atk.tx}|${atk.ty}`;
+
             card.innerHTML = `
                 <button class="tw-card-del" data-index="${index}" title="Eliminar Ataque">×</button>
-                <div style="font-weight:bold; color:#603000; font-size:14px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
-                    <span>${atk.ox}|${atk.oy} ➔ ${atk.tx}|${atk.ty}</span>
+                <div style="font-weight:normal; color:#603000; font-size:13px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; padding-right:25px;">
+                    <div>📍 ${originDisplayName} ➔ 🎯 ${targetDisplayName}</div>
                     ${villageBadgeHtml}
                 </div>
                 <div style="font-size:11px; color:#444; margin-bottom: 6px; padding:4px; background:rgba(255,255,255,0.5); border-radius:3px;">
@@ -625,14 +625,12 @@
                 </div>
             `;
 
-            // Eliminar tarjeta
             card.querySelector('.tw-card-del').addEventListener('click', () => {
                 attacks.splice(index, 1);
                 saveAttacks(attacks);
                 renderAttacks();
             });
 
-            // Botones de copia individual de horas HH:MM:SS
             card.querySelectorAll('.tw-copy-time-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -708,7 +706,7 @@
         }
     });
 
-    document.getElementById('tw-add-btn').addEventListener('click', () => {
+    document.getElementById('tw-add-btn').addEventListener('click', async () => {
         const ox = parseFloat(document.getElementById('tw-ox').value);
         const oy = parseFloat(document.getElementById('tw-oy').value);
         const tx = parseFloat(document.getElementById('tw-tx').value);
@@ -746,6 +744,18 @@
             return;
         }
 
+        const addBtn = document.getElementById('tw-add-btn');
+        addBtn.textContent = '⏳ Obteniendo datos...';
+        addBtn.disabled = true;
+
+        const [originName, targetName] = await Promise.all([
+            fetchVillageName(ox, oy),
+            fetchVillageName(tx, ty)
+        ]);
+
+        addBtn.textContent = '➕ Añadir al Planificador';
+        addBtn.disabled = false;
+
         const dx = ox - tx;
         const dy = oy - ty;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -755,11 +765,13 @@
         const realMinPerTile = baseMinPerTile / (currentSpeeds.worldSpeed * currentSpeeds.unitSpeed);
         
         const totalDurationMs = Math.round(dist * realMinPerTile * 60) * 1000;
-
         const launchDate = new Date(targetDate.getTime() - totalDurationMs);
 
         const newAttack = {
-            ox, oy, tx, ty, units,
+            ox, oy, tx, ty,
+            originName,
+            targetName,
+            units,
             dist: dist.toFixed(2),
             durationStr: formatDuration(totalDurationMs),
             targetDate: formatDate(targetDate),
@@ -787,7 +799,10 @@
                 if (atk.units[u] > 0) uStr.push(`[unit]${u}[/unit] ${atk.units[u]}`);
             });
 
-            bb += `\n[b]#${index + 1} | Origen:[/b] [coord]${atk.ox}|${atk.oy}[/coord] ➔ [b]Destino:[/b] [coord]${atk.tx}|${atk.ty}[/coord]\n`;
+            const origLabel = atk.originName ? `${atk.originName} ` : '';
+            const targLabel = atk.targetName ? `${atk.targetName} ` : '';
+
+            bb += `\n[b]#${index + 1} | Origen:[/b] ${origLabel}[coord]${atk.ox}|${atk.oy}[/coord] ➔ [b]Destino:[/b] ${targLabel}[coord]${atk.tx}|${atk.ty}[/coord]\n`;
             bb += `[b]Tropas:[/b] ${uStr.join(' ') || 'Sin especificar'}\n`;
             bb += `[b]Duración:[/b] ${atk.durationStr}\n`;
             bb += `[b]🚀 Enviar:[/b] ${atk.launchDate}\n`;
@@ -799,7 +814,6 @@
         document.getElementById('tw-bbcode-panel').style.display = 'block';
     });
 
-    // LÓGICA DE COPIAR BBCODE COMPLETO
     document.getElementById('tw-copy-bbcode-btn').addEventListener('click', () => {
         const textarea = document.getElementById('tw-bbcode-output');
         textarea.select();
