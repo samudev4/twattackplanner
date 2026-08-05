@@ -1,33 +1,51 @@
-# 📜 Registro de Cambios — Planificador de Ataques
+# 📜 Registro de Cambios (Changelog) — Planificador de Ataques
 
-Todos los cambios notables en este proyecto serán documentados en este archivo.
-
----
-
-## [v4.5] — 2026-08-05
-### ✨ Añadido
-* Enlace directo al **Registro de cambios** en el pie de página de la interfaz.
-* Parámetro configurable `CHANGELOG_URL` al inicio del script.
+Todos los cambios notables y mejoras de rendimiento introducidos en el script están organizados a continuación en orden cronológico inverso.
 
 ---
 
-## [v4.0] — 2026-07-20
+## [v4.5] — 05/08/2026
 ### ✨ Añadido
-* Integración con `/map/village.txt` para autocompletar nombres e IDs de pueblos origen y destino.
-* Botón de copia rápida al portapapeles para horas de lanzamiento (`HH:MM:SS`).
-* Generador de exportación a BBCode listo para foros de tribu.
-
-### ⚡ Mejorado
-* Optimización del temporizador usando actualización DOM selectiva para evitar consumo innecesario de CPU.
-* Ajustes visuales en las tarjetas de ataques planificados y distinción de estado mediante alertas dinámicas.
+* **Enlace al Registro de Cambios:** Incorporado un hipervínculo directo en el pie de página (`tw-footer`) para consultar el historial de versiones.
+* **Constante Configurable:** Variable global `CHANGELOG_URL` en la cabecera del script para facilitar la actualización de la URL del repositorio.
 
 ---
 
-## [v3.0] — 2026-06-12
+## [v4.0] — Julio 2026
 ### ✨ Añadido
-* Persistencia local con `localStorage` para posición del panel y ataques guardados.
-* Detección automática de la unidad más lenta para el cálculo preciso de tiempos.
+* **Resolución de Nombres de Pueblos:** Integración con `/map/village.txt` y `TWMap.villages` para obtener de forma asíncrona los nombres e IDs de los pueblos según sus coordenadas `(X|Y)`.
+* **Exportador de BBCode:** Panel dedicado para generar de forma automática una lista formateada con etiquetas `[coord]`, `[unit]` y fechas, lista para compartir en foros de tribu o bloc de notas.
+* **Copia Rápida de Horarios:** Botón 📋 junto a las horas de lanzamiento y llegada para copiar instantáneamente el formato `HH:MM:SS` al portapapeles.
 
-### 🔧 Cambios
-* Edición manual de velocidades del mundo y de unidades al hacer clic en los valores.
-* Limpieza de intervalos previos al reejecutar el script para evitar instancias duplicadas en memoria.
+### ⚡ Mejorado & Optimizado
+* **Refactorización del Temporizador:** Separación del renderizado visual (`renderAttacks`) de la actualización por segundo (`updateTimersOnly`), eliminando parpadeos visuales y reduciendo el consumo de CPU a prácticamente cero.
+* **Alertas Dinámicas de Tiempo:** El contador cambia automáticamente de estado (`OK`, `⚠️ Próximo`, `⚠️ ATRASADO`) aplicando estilos visuales dinámicos según los milisegundos restantes.
+
+---
+
+## [v3.5] — Junio 2026
+### ✨ Añadido
+* **Detección de Pueblo Actual:** Badge dinámico que verifica si el jugador se encuentra en el pueblo origen seleccionado (`✅ Estás en el pueblo` / `⚠️ No estás en el pueblo`).
+* **Autocompletado Rápido:** Botón `📍 Usar pueblo actual` para rellenar las coordenadas del pueblo activo en un solo clic.
+* **Sistema Anti-Duplicados:** Limpieza automática de intervalos globales (`window.twPlannerInterval`) y nodos DOM previos al ejecutar el script múltiples veces.
+
+---
+
+## [v3.0] — Junio 2026
+### ✨ Añadido
+* **Persistencia con `localStorage`:** Guardado automático de la posición del panel en pantalla, ataques planificados activos y ajustes de velocidad del mundo.
+* **Configuración de Velocidades:** Lectura automática de `/interface.php?func=get_config` con la opción de editar manualmente las velocidades del mundo y de las unidades haciendo clic sobre sus valores.
+
+---
+
+## [v2.0] — Junio 2026
+### ✨ Añadido
+* **Cálculo Automático por Unidad Más Lenta:** Identificación automática de la tropa con menor velocidad dentro del contingente seleccionado para calcular la duración exacta del desplazamiento.
+* **Acceso Directo a la Plaza de Reuniones:** Generación de enlaces con parámetros GET pre-rellenados (`&x=...&y=...&unit=count`) para enviar ataques rápidamente desde la interfaz.
+
+---
+
+## [v1.0] — Junio 2026
+### ✨ Lanzamiento Inicial
+* **Interfaz Flotante Draggable:** Creación del panel GUI flotante minimizable y arrastrable adaptado al estilo estético del juego.
+* **Formulario Base:** Entrada de coordenadas de origen, destino, fecha y hora exacta con soporte para milisegundos.
