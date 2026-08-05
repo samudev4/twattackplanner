@@ -11,7 +11,6 @@ Un **userscript avanzado e intuitivo** diseñado para optimizar, coordinar y ges
 ## 🌟 Características Principales
 
 * **🎯 Cálculo de Tiempos con Precisión:** Calcula automáticamente la fecha y hora exacta de salida considerando las coordenadas, la unidad más lenta elegida y las velocidades del mundo.
-* **🌐 Soporte Multi-idioma (i18n):** Interfaz dinámicamente conmutable entre **Español 🇪🇸** e **Inglés 🇬🇧** con guardado de preferencias.
 * **🗺️ Carga de Datos en Tiempo Real:** Conexión directa con la base de datos de pueblos del mundo (`/map/village.txt`) para resolver los nombres de pueblos de origen y destino automáticamente.
 * **⚔️ Integración con la Plaza de Armas:** Genera enlaces directos a la Plaza de Armas cargando previamente el objetivo y las tropas seleccionadas.
 * **📋 Exportación a BBCode:** Exporta tu lista completa de ataques organizados por hora de salida con un solo clic, listo para compartir en el foro de la tribu o por mensaje.
@@ -27,10 +26,13 @@ Añadir el script a la barra de acceso rápido de tu cuenta de Guerras Tribales 
 1. Entra en el juego y ve a **Ajustes** > **Barra de acceso rápido**.
 2. Haz clic en **Añadir nueva entrada**.
 3. Configura los campos del formulario:
-   * **Nombre del enlace:** `Planificador de Ataques` (o el nombre que prefieras).
-   * **URL de la imagen:** *(Opcional)* Enlace a un icono si deseas personalizarlo.
-   * **URL del objetivo:** Pega el contenido del archivo [`planificador_v45.js`](./planificador_v45.js) precedido de `javascript:`.
-4. Guarda los cambios. El botón estará listo para usarse en tu barra superior en cualquier pantalla del juego.
+   * **Nombre:** `Planificador de Ataques` (o el nombre que prefieras).
+   * **URL de la imagen:** *(Opcional)* Enlace a un icono para personalizar el botón.
+   * **URL del objetivo:** Pega exactamente la siguiente línea de código:
+     ```javascript
+     javascript:$.getScript('[https://samudev4.github.io/twattackplanner/twattackplanner.js](https://samudev4.github.io/twattackplanner/twattackplanner.js)');
+     ```
+4. Guarda los cambios. El botón estará disponible en tu barra superior listo para ejecutarse en cualquier pantalla del juego.
 
 ---
 
