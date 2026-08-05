@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    const SCRIPT_VERSION = "4.0";
+    const SCRIPT_VERSION = "4.1";
     const GITHUB_URL = "https://github.com/samudev4";
 
     if (document.getElementById('tw-planner-window')) {
@@ -65,7 +65,7 @@
         localStorage.setItem('tw_planner_pos', JSON.stringify({ top, left }));
     }
 
-    // BÚSQUEDA DEL NOMBRE DEL PUEBLO VÍA AJAX / TW MAP / PLAZA
+    // BÚSQUEDA PRECISA DEL NOMBRE DEL PUEBLO VÍA AJAX / MAPA
     async function fetchVillageName(x, y) {
         const targetX = parseInt(x);
         const targetY = parseInt(y);
@@ -75,7 +75,7 @@
             return game_data.village.name;
         }
 
-        // 2. Caché de mapa (si está cargado TWMap)
+        // 2. Caché de mapa (si TWMap está activo)
         if (typeof TWMap !== 'undefined' && TWMap.villages) {
             const key = targetX * 1000 + targetY;
             if (TWMap.villages[key] && TWMap.villages[key].name) {
@@ -84,30 +84,39 @@
         }
 
         const villageId = (typeof game_data !== 'undefined' && game_data.village) ? game_data.village.id : '';
+        const coordRegex = new RegExp(`\\(\\s*${targetX}\\s*\\|\\s*${targetY}\\s*\\)`);
 
         // 3. Consulta vía info_village
         try {
             const html = await $.get(`/game.php?village=${villageId}&screen=info_village&x=${targetX}&y=${targetY}`);
             const doc = new DOMParser().parseFromString(html, 'text/html');
-            const titleEl = doc.querySelector('#content_value h2') || doc.querySelector('#content_value h3') || doc.querySelector('.village_anchor') || doc.querySelector('h2');
-            if (titleEl) {
-                let rawName = titleEl.textContent.trim();
-                let cleaned = rawName.replace(/\s*\(\d+\|\d+\)\s*[KC]\d+/gi, '').trim();
-                if (cleaned) return cleaned;
+            const candidates = doc.querySelectorAll('#content_value h2, #content_value h3, #content_value th, #content_value .quickedit-title, .village_anchor');
+
+            for (let el of candidates) {
+                const text = el.textContent.trim();
+                if (coordRegex.test(text)) {
+                    let namePart = text.split(coordRegex)[0].trim();
+                    namePart = namePart.replace(/[\r\n\t]+/g, ' ').trim();
+                    if (namePart) return namePart;
+                }
             }
         } catch (e) {
             console.error("Error obteniendo nombre vía info_village:", e);
         }
 
-        // 4. Consulta alternativa vía plaza de armas
+        // 4. Consulta alternativa vía plaza de armas (screen=place)
         try {
             const html = await $.get(`/game.php?village=${villageId}&screen=place&x=${targetX}&y=${targetY}`);
             const doc = new DOMParser().parseFromString(html, 'text/html');
-            const linkEl = doc.querySelector('a[href*="screen=info_village"]');
-            if (linkEl) {
-                let rawName = linkEl.textContent.trim();
-                let cleaned = rawName.replace(/\s*\(\d+\|\d+\)\s*[KC]\d+/gi, '').trim();
-                if (cleaned) return cleaned;
+            const links = doc.querySelectorAll('a[href*="screen=info_village"], #content_value h2, #content_value h3');
+
+            for (let el of links) {
+                const text = el.textContent.trim();
+                if (coordRegex.test(text)) {
+                    let namePart = text.split(coordRegex)[0].trim();
+                    namePart = namePart.replace(/[\r\n\t]+/g, ' ').trim();
+                    if (namePart) return namePart;
+                }
             }
         } catch (e) {
             console.error("Error obteniendo nombre vía plaza:", e);
