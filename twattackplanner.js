@@ -180,6 +180,25 @@
         }
         .tw-copy-time-btn:hover { background: #e1c38a; }
 
+        .tw-village-badge {
+            font-size: 11px;
+            font-weight: bold;
+            padding: 2px 7px;
+            border-radius: 4px;
+            margin-right: 25px;
+            display: inline-block;
+        }
+        .tw-badge-ok {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .tw-badge-warn {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
         .tw-unit-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -531,6 +550,14 @@
 
         const now = Date.now();
 
+        // Obtener coordenadas del pueblo actual
+        let currentX = null;
+        let currentY = null;
+        if (typeof game_data !== 'undefined' && game_data.village) {
+            currentX = parseInt(game_data.village.x);
+            currentY = parseInt(game_data.village.y);
+        }
+
         attacks.forEach((atk, index) => {
             const [datePart, timePart] = atk.launchDate.split(' ');
             const [d, m, y] = datePart.split('/');
@@ -549,6 +576,14 @@
             const launchHHMMSS = getTimeHHMMSS(atk.launchDate);
             const targetHHMMSS = getTimeHHMMSS(atk.targetDate);
 
+            // Comprobar si el usuario se encuentra actualmente en el pueblo de origen
+            const isSameVillage = (currentX !== null && currentY !== null) && 
+                                  (parseInt(atk.ox) === currentX && parseInt(atk.oy) === currentY);
+
+            const villageBadgeHtml = isSameVillage
+                ? `<span class="tw-village-badge tw-badge-ok">✅ Estás en el pueblo</span>`
+                : `<span class="tw-village-badge tw-badge-warn">⚠️ No estás en el pueblo</span>`;
+
             // Determinar texto y clase según si ya venció el ataque
             let timerText = formatDuration(diffMs);
             let timerClass = 'tw-timer-ok';
@@ -562,7 +597,10 @@
 
             card.innerHTML = `
                 <button class="tw-card-del" data-index="${index}" title="Eliminar Ataque">×</button>
-                <div style="font-weight:bold; color:#603000; font-size:14px; margin-bottom:4px;">${atk.ox}|${atk.oy} ➔ ${atk.tx}|${atk.ty}</div>
+                <div style="font-weight:bold; color:#603000; font-size:14px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
+                    <span>${atk.ox}|${atk.oy} ➔ ${atk.tx}|${atk.ty}</span>
+                    ${villageBadgeHtml}
+                </div>
                 <div style="font-size:11px; color:#444; margin-bottom: 6px; padding:4px; background:rgba(255,255,255,0.5); border-radius:3px;">
                     <strong>Tropas:</strong> ${unitsSummary.join(', ') || 'Sin especificar'}
                 </div>
