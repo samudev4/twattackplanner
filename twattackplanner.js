@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    const SCRIPT_VERSION = "4.3";
+    const SCRIPT_VERSION = "4.4";
     const GITHUB_URL = "https://github.com/samudev4";
 
     if (document.getElementById('tw-planner-window')) {
@@ -690,7 +690,7 @@
                         </div>
                     </div>
                     <div style="text-align:right;">
-                        <div class="tw-timer ${timerClass}">${timerText}</div>
+                        <div class="tw-timer ${timerClass}" data-launch-ms="${launchMs}">${timerText}</div>
                         <div style="margin-top:6px;">
                             <a href="${rallyUrl}" target="_blank" class="tw-btn tw-btn-action" style="text-decoration:none; display:inline-block;">⚔️ Ir a la Plaza</a>
                         </div>
@@ -741,12 +741,38 @@
         });
     }
 
+    // ACTUALIZA ÚNICAMENTE EL TEMPORIZADOR SINO DESTRUYE EL DOM
+    function updateTimersOnly() {
+        const now = Date.now();
+        const timerEls = document.querySelectorAll('#tw-attack-list .tw-timer');
+
+        timerEls.forEach(timer => {
+            const launchMs = parseInt(timer.getAttribute('data-launch-ms'));
+            if (isNaN(launchMs)) return;
+
+            const diffMs = launchMs - now;
+            let timerText = formatDuration(diffMs);
+            let timerClass = 'tw-timer tw-timer-ok';
+
+            if (diffMs <= 0) {
+                timerText = '⚠️ ATRASADO';
+                timerClass = 'tw-timer tw-timer-expired';
+            } else if (diffMs < 60000) {
+                timerClass = 'tw-timer tw-timer-warn';
+            }
+
+            if (timer.textContent !== timerText) {
+                timer.textContent = timerText;
+            }
+            if (timer.className !== timerClass) {
+                timer.className = timerClass;
+            }
+        });
+    }
+
     setInterval(() => {
         if (document.getElementById('tw-planner-window')) {
-            const attacks = getStoredAttacks();
-            if (attacks.length > 0) {
-                renderAttacks();
-            }
+            updateTimersOnly();
         }
     }, 1000);
 
