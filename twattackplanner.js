@@ -3,6 +3,8 @@
 
     const SCRIPT_VERSION = "4.5";
     const GITHUB_URL = "https://github.com/samudev4";
+    // Define aquí la URL de tu archivo .txt o enlace al registro de cambios
+    const CHANGELOG_URL = "https://ejemplo.com/changelog.txt";
 
     // 0. LIMPIEZA DE INSTANCIAS PREVIAS (Evita duplicados en memoria)
     if (window.twPlannerInterval) {
@@ -439,8 +441,8 @@
             </div>
 
             <div class="tw-footer">
-                <span>Hecho por <strong>REDWALDA</strong></span>
-                <span>v${SCRIPT_VERSION} (05/08/2026)| <a href="${GITHUB_URL}" target="_blank" rel="noopener noreferrer">GitHub</a></span>
+                <span>Hecho por <strong>REDWALDA</strong> | <a href="${CHANGELOG_URL}" target="_blank" rel="noopener noreferrer">Registro de cambios</a></span>
+                <span>v${SCRIPT_VERSION} (05/08/2026) | <a href="${GITHUB_URL}" target="_blank" rel="noopener noreferrer">GitHub</a></span>
             </div>
         </div>
     `;
