@@ -4,6 +4,13 @@ Todos los cambios notables y mejoras de rendimiento introducidos en el script es
 
 ---
 
+## [v4.6] — 06/08/2026
+### ✨ Añadido
+* **Notas:** Ahora puedes añadir una nota o una observación cuando planees un ataque.
+* **Notas en BBCode:** Las notas se añadirán al BBCode exportado.
+
+---
+
 ## [v4.5] — 05/08/2026
 ### ✨ Añadido
 * **Enlace al Registro de Cambios:** Incorporado un hipervínculo directo en el pie de página (`tw-footer`) para consultar el historial de versiones.
