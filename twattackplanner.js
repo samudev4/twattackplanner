@@ -1,12 +1,11 @@
 (function() {
     'use strict';
 
-    const SCRIPT_VERSION = "4.5";
+    const SCRIPT_VERSION = "4.6";
     const GITHUB_URL = "https://github.com/samudev4/twattackplanner";
-    // Define aquí la URL de tu archivo .txt o enlace al registro de cambios
     const CHANGELOG_URL = "https://github.com/samudev4/twattackplanner/blob/main/CHANGELOG.MD";
 
-    // 0. LIMPIEZA DE INSTANCIAS PREVIAS (Evita duplicados en memoria)
+    // 0. LIMPIEZA DE INSTANCIAS PREVIAS
     if (window.twPlannerInterval) {
         clearInterval(window.twPlannerInterval);
         window.twPlannerInterval = null;
@@ -105,7 +104,6 @@
         }
     }
 
-    // OBTIENE ID Y NOMBRE DE CUALQUIER PUEBLO
     async function fetchVillageData(x, y) {
         const targetX = parseInt(x);
         const targetY = parseInt(y);
@@ -263,9 +261,7 @@
             font-weight: bold;
             transition: color 0.2s;
         }
-        .tw-village-link:hover {
-            color: #d35400;
-        }
+        .tw-village-link:hover { color: #d35400; }
 
         .tw-unit-grid {
             display: grid;
@@ -411,6 +407,11 @@
                     <input type="text" inputmode="numeric" maxlength="3" id="tw-ms" class="tw-input tw-input-ms" placeholder="MS">
                 </div>
 
+                <div class="tw-row" style="margin-top: 10px;">
+                    <span style="width:65px; font-weight:bold;">Notas:</span>
+                    <input type="text" id="tw-note" class="tw-input" placeholder="Ej: Nobles + off, fakes, tren de 6, deff..." style="flex:1;">
+                </div>
+
                 <div style="font-weight:bold; margin-top:12px; margin-bottom:4px; border-bottom: 1px dashed #b89160; padding-bottom:4px;">Tropas a enviar:</div>
                 <div class="tw-unit-grid" id="tw-unit-inputs"></div>
 
@@ -442,7 +443,7 @@
 
             <div class="tw-footer">
                 <span>Hecho por <strong>REDWALDA</strong> | <a href="${CHANGELOG_URL}" target="_blank" rel="noopener noreferrer">Registro de cambios</a></span>
-                <span>v${SCRIPT_VERSION} (05/08/2026) | <a href="${GITHUB_URL}" target="_blank" rel="noopener noreferrer">GitHub</a></span>
+                <span>v${SCRIPT_VERSION} (06/08/2026) | <a href="${GITHUB_URL}" target="_blank" rel="noopener noreferrer">GitHub</a></span>
             </div>
         </div>
     `;
@@ -608,7 +609,7 @@
         return url;
     }
 
-    // RENDERIZADO ESTÁTICO DE ATAQUES (Sólo al añadir, borrar o cargar)
+    // RENDERIZADO ESTÁTICO DE ATAQUES
     function renderAttacks() {
         const list = document.getElementById('tw-attack-list');
         if (!list) return;
@@ -668,12 +669,17 @@
             const originText = atk.originName ? `${atk.originName} (${atk.ox}|${atk.oy})` : `${atk.ox}|${atk.oy}`;
             const targetText = atk.targetName ? `${atk.targetName} (${atk.tx}|${atk.ty})` : `${atk.tx}|${atk.ty}`;
 
+            const noteHtml = atk.note 
+                ? `<div style="font-size:11px; color:#2c3e50; margin-bottom: 6px; padding:4px 6px; background:rgba(255,255,255,0.7); border-left: 3px solid #2980b9; border-radius:3px;">📝 <strong>Nota:</strong> ${atk.note}</div>` 
+                : '';
+
             card.innerHTML = `
                 <button class="tw-card-del" data-index="${index}" title="Eliminar Ataque">×</button>
                 <div style="font-weight:normal; color:#603000; font-size:13px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; padding-right:25px;">
                     <div>📍 <a href="${originUrl}" target="_blank" class="tw-village-link">${originText}</a> ➔ 🎯 <a href="${targetUrl}" target="_blank" class="tw-village-link">${targetText}</a></div>
                     ${villageBadgeHtml}
                 </div>
+                ${noteHtml}
                 <div style="font-size:11px; color:#444; margin-bottom: 6px; padding:4px; background:rgba(255,255,255,0.5); border-radius:3px;">
                     <strong>Tropas:</strong> ${unitsSummary.join(', ') || 'Sin especificar'}
                 </div>
@@ -740,7 +746,7 @@
         });
     }
 
-    // ACTUALIZACIÓN EXCLUSIVA DE TEXTO DEL TEMPORIZADOR (Sin modificar la estructura HTML)
+    // ACTUALIZACIÓN EXCLUSIVA DE TEXTO DEL TEMPORIZADOR
     function updateTimersOnly() {
         const now = Date.now();
         const timerEls = document.querySelectorAll('#tw-attack-list .tw-timer');
@@ -798,6 +804,7 @@
         document.getElementById('tw-m').value = '';
         document.getElementById('tw-s').value = '';
         document.getElementById('tw-ms').value = '';
+        document.getElementById('tw-note').value = '';
         document.querySelectorAll('.tw-unit-count').forEach(i => i.value = '');
     });
 
@@ -813,6 +820,7 @@
         const oy = parseFloat(document.getElementById('tw-oy').value);
         const tx = parseFloat(document.getElementById('tw-tx').value);
         const ty = parseFloat(document.getElementById('tw-ty').value);
+        const note = document.getElementById('tw-note').value.trim();
 
         if (isNaN(ox) || isNaN(oy) || isNaN(tx) || isNaN(ty)) {
             alert('Por favor, ingresa coordenadas válidas de Origen y Destino.');
@@ -876,6 +884,7 @@
             targetId: targetData.id,
             targetName: targetData.name,
             units,
+            note,
             dist: dist.toFixed(2),
             durationStr: formatDuration(totalDurationMs),
             targetDate: formatDate(targetDate),
@@ -909,6 +918,9 @@
             const targLabel = atk.targetName ? `${atk.targetName} ` : '';
 
             bb += `\n[b]#${index + 1} | Origen:[/b] ${origLabel}[coord]${atk.ox}|${atk.oy}[/coord] ➔ [b]Destino:[/b] ${targLabel}[coord]${atk.tx}|${atk.ty}[/coord]\n`;
+            if (atk.note) {
+                bb += `[b]📝 Observaciones:[/b] ${atk.note}\n`;
+            }
             bb += `[b]Tropas:[/b] ${uStr.join(' ') || 'Sin especificar'}\n`;
             bb += `[b]Duración:[/b] ${atk.durationStr}\n`;
             bb += `[b]🚀 Enviar:[/b] ${atk.launchDate}\n`;
