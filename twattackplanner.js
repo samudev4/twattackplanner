@@ -409,7 +409,7 @@
 
                 <div class="tw-row" style="margin-top: 10px;">
                     <span style="width:65px; font-weight:bold;">Notas:</span>
-                    <input type="text" id="tw-note" class="tw-input" placeholder="Ej: Nobles + off, fakes, tren de 6, deff..." style="flex:1;">
+                    <input type="text" id="tw-note" class="tw-input" placeholder="Escribe alguna observación" style="flex:1;">
                 </div>
 
                 <div style="font-weight:bold; margin-top:12px; margin-bottom:4px; border-bottom: 1px dashed #b89160; padding-bottom:4px;">Tropas a enviar:</div>
